@@ -9,14 +9,14 @@ import UIKit
 
 
 
-struct ModelBasedLayoutData {
-    let collectionViewSize: CGSize
-    let itemsCount: Int
+public struct ModelBasedLayoutData {
+    public let collectionViewSize: CGSize
+    public let itemsCount: Int
     
-    let sections: [SectionData]
+    public let sections: [SectionData]
     
     
-    struct SectionData {
+    public struct SectionData {
         let section: Int
         let itemCount: Int
         let firstItemIndex: Int
@@ -31,7 +31,7 @@ struct ModelBasedLayoutData {
         }
     }
     
-    var numberOfSections: Int {
+    public var numberOfSections: Int {
         sections.count
     }
     
@@ -67,11 +67,11 @@ struct ModelBasedLayoutData {
         self.sections = sections
     }
     
-    func index(for indexPath: IndexPath) -> Int {
+    public func index(for indexPath: IndexPath) -> Int {
         return self.sections[indexPath.section].firstItemIndex + indexPath.item
     }
     
-    func indexPath(for index: Int) -> IndexPath {
+    public func indexPath(for index: Int) -> IndexPath {
         assert(index < self.itemsCount)
         
         let section = self.sections.binarySearch { section in
@@ -86,7 +86,7 @@ struct ModelBasedLayoutData {
         return IndexPath(item: index - sections[section].firstItemIndex, section: section)
     }
     
-    func indexPath(after indexPath: IndexPath) -> IndexPath? {
+    public func indexPath(after indexPath: IndexPath) -> IndexPath? {
         if indexPath.item == self.sections[indexPath.section].itemCount - 1 {
             return indexPath.section < self.numberOfSections - 1 ? IndexPath(item: 0, section: indexPath.section + 1) : nil
         } else {
@@ -94,7 +94,7 @@ struct ModelBasedLayoutData {
         }
     }
     
-    func indexPaths(startIndex: Int, endIndex: Int) -> [IndexPath] {
+    public func indexPaths(startIndex: Int, endIndex: Int) -> [IndexPath] {
         guard self.itemsCount > 0 else { return [] }
         
         let startIndex = startIndex.clamp(min: 0, max: self.itemsCount-1)

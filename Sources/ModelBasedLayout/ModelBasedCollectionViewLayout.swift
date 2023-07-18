@@ -37,8 +37,8 @@ class ModelBasedCollectionViewLayoutInvalidationContext: UICollectionViewLayoutI
 
 
 // MARK: ModelBasedCollectionViewLayout
-class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectionViewLayout {
-    override class var invalidationContextClass: AnyClass { ModelBasedCollectionViewLayoutInvalidationContext.self }
+public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectionViewLayout {
+    public override class var invalidationContextClass: AnyClass { ModelBasedCollectionViewLayoutInvalidationContext.self }
     
     enum TransitionAnimation {
         case opacity, custom
@@ -110,7 +110,7 @@ class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectionViewLa
     }
     
     // MARK: ContentSize
-    override var collectionViewContentSize: CGSize {
+    public override var collectionViewContentSize: CGSize {
         if let model = self.layoutModel(.afterUpdate) {
             return model.contentSize
         }
@@ -118,7 +118,7 @@ class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectionViewLa
     }
     
     // MARK: Prepare
-    override func prepare() {
+    public override func prepare() {
         if self.layoutModel(.afterUpdate) == nil {
             self.layoutAfterUpdate = self.makeNewLayout()
         } else if prepareActions.contains(.replaceModel) {
@@ -133,7 +133,7 @@ class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectionViewLa
     }
     
     // MARK: Prepare: Animated Bounds Change
-    override func prepare(forAnimatedBoundsChange oldBounds: CGRect) {
+    public override func prepare(forAnimatedBoundsChange oldBounds: CGRect) {
 //        if collectionView?.bounds.size != self.layoutData?.collectionViewSize {
 //            self.needsModelBasedLayoutDataUpdate = true
 //        }
@@ -141,19 +141,19 @@ class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectionViewLa
         super.prepare(forAnimatedBoundsChange: oldBounds)
     }
     
-    override func finalizeAnimatedBoundsChange() {
+    public override func finalizeAnimatedBoundsChange() {
         super.finalizeAnimatedBoundsChange()
         self.layoutBeforeUpdate = nil
     }
 
     // MARK: Prepare: Collection View Updates
-    override func prepare(forCollectionViewUpdates updateItems: [UICollectionViewUpdateItem]) {
+    public override func prepare(forCollectionViewUpdates updateItems: [UICollectionViewUpdateItem]) {
         super.prepare(forCollectionViewUpdates: updateItems)
         
         dataChange = DataBatchUpdate(layoutData: self.layoutData(.beforeUpdate)!, updateItems: updateItems)
     }
     
-    override func finalizeCollectionViewUpdates() {
+    public override func finalizeCollectionViewUpdates() {
         super.finalizeCollectionViewUpdates()
         
         dataChange = nil
@@ -162,7 +162,7 @@ class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectionViewLa
     }
     
     // MARK: Prepare: Transitions
-    override func prepareForTransition(from oldLayout: UICollectionViewLayout) {
+    public override func prepareForTransition(from oldLayout: UICollectionViewLayout) {
         if let transitionLayout = oldLayout as? UICollectionViewTransitionLayout {
             self.transitionLayout = transitionLayout
             self.transitioningFrom = transitionLayout.currentLayout
@@ -173,7 +173,7 @@ class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectionViewLa
         super.prepareForTransition(from: oldLayout)
     }
     
-    override func prepareForTransition(to newLayout: UICollectionViewLayout) {
+    public override func prepareForTransition(to newLayout: UICollectionViewLayout) {
         if let transitionLayout = newLayout as? UICollectionViewTransitionLayout {
             self.transitionLayout = transitionLayout
             self.transitioningTo = transitionLayout.nextLayout
@@ -184,7 +184,7 @@ class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectionViewLa
         super.prepareForTransition(to: newLayout)
     }
     
-    override func finalizeLayoutTransition() {
+    public override func finalizeLayoutTransition() {
         self.transitioningFrom = nil
         self.transitioningTo = nil
         super.finalizeLayoutTransition()
@@ -207,11 +207,11 @@ class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectionViewLa
     }
     
     // MARK: Invalidation
-    override func invalidateLayout() {
+    public override func invalidateLayout() {
         super.invalidateLayout()
     }
     
-    override func invalidateLayout(with context: UICollectionViewLayoutInvalidationContext) {
+    public override func invalidateLayout(with context: UICollectionViewLayoutInvalidationContext) {
         super.invalidateLayout(with: context)
         
         if context.invalidateDataSourceCounts || context.invalidateEverything {
@@ -219,7 +219,7 @@ class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectionViewLa
         }
     }
     
-    override func invalidationContext(forBoundsChange newBounds: CGRect) -> UICollectionViewLayoutInvalidationContext {
+    public override func invalidationContext(forBoundsChange newBounds: CGRect) -> UICollectionViewLayoutInvalidationContext {
         let context = super.invalidationContext(forBoundsChange: newBounds)
         
         if newBounds.size != self.layoutData(.afterUpdate)?.collectionViewSize {
@@ -235,7 +235,7 @@ class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectionViewLa
     }
     
 
-    override func shouldInvalidateLayout(forBoundsChange newBounds: CGRect) -> Bool {
+    public override func shouldInvalidateLayout(forBoundsChange newBounds: CGRect) -> Bool {
         if newBounds.size != self.layoutData(.afterUpdate)?.collectionViewSize {
             return true
         }
@@ -244,14 +244,14 @@ class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectionViewLa
     
     // MARK: Attrs in Rect
     
-    override final func layoutAttributesForElements(in rect: CGRect) -> [UICollectionViewLayoutAttributes]? {
+    public override final func layoutAttributesForElements(in rect: CGRect) -> [UICollectionViewLayoutAttributes]? {
         return self.layoutModel(.afterUpdate)!.layoutAttributes(in: rect).compactMap { $0.forLayout() }
     }
     
     // MARK: Items
 
-    override final func initialLayoutAttributesForAppearingItem(at indexPath: IndexPath) -> UICollectionViewLayoutAttributes? {
-        print("Initial \(indexPath.section).\(indexPath.item)")
+    public override final func initialLayoutAttributesForAppearingItem(at indexPath: IndexPath) -> UICollectionViewLayoutAttributes? {
+        //print("Initial \(indexPath.section).\(indexPath.item)")
 //        guard self.transitioningFrom == nil else {
 //            return self.layoutAttributesForItem(at: indexPath)
 //        }
@@ -276,14 +276,14 @@ class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectionViewLa
         return attrs?.forLayout()
     }
 
-    override final func layoutAttributesForItem(at indexPath: IndexPath) -> UICollectionViewLayoutAttributes? {
+    public override final func layoutAttributesForItem(at indexPath: IndexPath) -> UICollectionViewLayoutAttributes? {
         let layoutAttrs = self.layoutModel(.afterUpdate)!.layoutAttributes(forItemAt: indexPath)
-        print("layout \(indexPath.section).\(indexPath.item) \(layoutAttrs!.center)")
+        //print("layout \(indexPath.section).\(indexPath.item) \(layoutAttrs!.center)")
         return layoutAttrs?.forLayout()
     }
 
-    override final func finalLayoutAttributesForDisappearingItem(at indexPath: IndexPath) -> UICollectionViewLayoutAttributes? {
-        print("Final \(indexPath.section).\(indexPath.item)")
+    public override final func finalLayoutAttributesForDisappearingItem(at indexPath: IndexPath) -> UICollectionViewLayoutAttributes? {
+        //print("Final \(indexPath.section).\(indexPath.item)")
         
         if let dataChange = dataChange {
             if dataChange.indexPathAfterUpdate(for: indexPath) != nil {

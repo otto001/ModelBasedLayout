@@ -8,7 +8,7 @@
 import UIKit
 
 
-protocol LayoutModel {
+public protocol LayoutModel {
     
     var contentSize: CGSize { get }
     
