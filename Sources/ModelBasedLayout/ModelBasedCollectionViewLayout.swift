@@ -95,7 +95,7 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
     
     private(set) var modelClosure: (_ layoutData: ModelBasedLayoutData) -> ModelType
     
-    init(_ model: @escaping (_ layoutData: ModelBasedLayoutData) -> ModelType) {
+    public init(_ model: @escaping (_ layoutData: ModelBasedLayoutData) -> ModelType) {
         self.modelClosure = model
         super.init()
     }
