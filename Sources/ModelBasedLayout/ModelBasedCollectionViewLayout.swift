@@ -40,11 +40,11 @@ class ModelBasedCollectionViewLayoutInvalidationContext: UICollectionViewLayoutI
 public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectionViewLayout {
     public override class var invalidationContextClass: AnyClass { ModelBasedCollectionViewLayoutInvalidationContext.self }
     
-    enum TransitionAnimation {
+    public enum TransitionAnimation {
         case opacity, custom
     }
     
-    var transitionAnimation: TransitionAnimation = .opacity
+    public var transitionAnimation: TransitionAnimation = .opacity
     
     enum UpdateState {
         case beforeUpdate, afterUpdate
@@ -61,7 +61,7 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
     private var layoutAfterUpdate: Layout?
     private var layoutBeforeUpdate: Layout?
     
-    var layoutModel: ModelType? {
+    public var layoutModel: ModelType? {
         layoutAfterUpdate?.model
     }
     
