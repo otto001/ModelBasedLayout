@@ -21,7 +21,7 @@ public protocol LayoutModel {
     func layoutAttributes(forSupplementaryViewAt indexPath: IndexPath) -> LayoutAttributes?
 }
 
-extension LayoutModel {
+public extension LayoutModel {
     func initialLayoutAttributes(forInsertedItemAt indexPath: IndexPath) -> LayoutAttributes? {
         return layoutAttributes(forItemAt: indexPath)
     }
