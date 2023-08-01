@@ -7,43 +7,11 @@
 
 import UIKit
 
-// Layout transition order of operation (especially important for for working with sticky headers)
-//
-// prepare new layout (called twice for some reason)
-// old layout returns old attrs (called from setCollectionViewLayout)
-// new layout returns new (but not necessarily final) attrs (called from setCollectionViewLayout)
-//
-// old layout returns new, final attrs in final layout call (called from setCollectionViewLayout / doubleSidedAnimation)
-//      uses: new layout returns new, final attrs
-//
-// new layout returns old attrs in initial layout call (called from setCollectionViewLayout / doubleSidedAnimation)
-//      uses: old layout returns old attrs in layout call
-//
-// new layout returns new, final attrs in layout call (after animation completes)
-//
-// Result:
-//  Animation A: old layout -> old final
-//  Animation B: new inital -> new layout
-
-// Issue: Animation A & B are not identical
-// Solution 1: Hide Animation B by setting isHidden = true
-// Solution 2: Hide Animation B by setting isHidden = true (does not work properly for some reason)
-
-
-// MARK: ModelBasedCollectionViewLayoutInvalidationContext
-class ModelBasedCollectionViewLayoutInvalidationContext: UICollectionViewLayoutInvalidationContext {
-    //var invalidateModelBasedLayoutData: Bool = false
-}
 
 
 // MARK: ModelBasedCollectionViewLayout
 public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectionViewLayout {
-    public override class var invalidationContextClass: AnyClass { ModelBasedCollectionViewLayoutInvalidationContext.self }
-    
-    public enum TransitionAnimation {
-        case opacity, custom
-    }
-    
+
     public var transitionAnimation: TransitionAnimation = .opacity
     
     enum UpdateState {
@@ -53,6 +21,7 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
     private var prepareActions: PrepareActions = []
     private var dataChange: DataBatchUpdate? = nil
     
+    // MARK: Layout Model & Data
     struct Layout {
         let data: ModelBasedLayoutData
         var model: ModelType
@@ -74,7 +43,7 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
         }
     }
     
-    func layoutData(_ state: UpdateState) -> ModelBasedLayoutData? {
+    private func layoutData(_ state: UpdateState) -> ModelBasedLayoutData? {
         switch state {
         case .beforeUpdate:
             return layoutBeforeUpdate?.data
@@ -134,10 +103,6 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
     
     // MARK: Prepare: Animated Bounds Change
     public override func prepare(forAnimatedBoundsChange oldBounds: CGRect) {
-//        if collectionView?.bounds.size != self.layoutData?.collectionViewSize {
-//            self.needsModelBasedLayoutDataUpdate = true
-//        }
-        
         super.prepare(forAnimatedBoundsChange: oldBounds)
     }
     
@@ -211,10 +176,26 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
         super.invalidateLayout()
     }
     
+    private func invalidateForSizeChange(newBounds: CGRect, with context: UICollectionViewLayoutInvalidationContext) {
+        if newBounds.size != self.layoutData(.afterUpdate)?.collectionViewSize,
+           let currentModel = self.layoutModel {
+            
+            let newModel = self.makeNewLayout(overrideCollectionViewSize: newBounds.size)
+            let contentSizeAdjustment = newModel.model.contentSize - currentModel.contentSize
+            
+            context.contentSizeAdjustment = contentSizeAdjustment
+            context.contentOffsetAdjustment = self.getContentOffsetAdjustment(contentSizeBefore: self.layoutModel!.contentSize, boundsBefore: self.collectionView!.bounds, contentSizeAfter: newModel.model.contentSize, boundsAfer: newBounds).cgPoint
+        }
+    }
+    
     public override func invalidateLayout(with context: UICollectionViewLayoutInvalidationContext) {
         super.invalidateLayout(with: context)
         
-        if context.invalidateDataSourceCounts || context.invalidateEverything {
+        if let collectionView = self.collectionView {
+            self.invalidateForSizeChange(newBounds: collectionView.bounds, with: context)
+        }
+        
+        if context.invalidateDataSourceCounts || context.invalidateEverything || context.contentSizeAdjustment != .zero  || context.contentOffsetAdjustment != .zero  {
             self.prepareActions.insert(.replaceModel)
         }
     }
@@ -222,14 +203,7 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
     public override func invalidationContext(forBoundsChange newBounds: CGRect) -> UICollectionViewLayoutInvalidationContext {
         let context = super.invalidationContext(forBoundsChange: newBounds)
         
-        if newBounds.size != self.layoutData(.afterUpdate)?.collectionViewSize {
-            let newModel = self.makeNewLayout(overrideCollectionViewSize: newBounds.size)
-            let contentSizeAdjustment = newModel.model.contentSize - self.layoutModel!.contentSize
-            context.contentSizeAdjustment = contentSizeAdjustment
-            context.contentOffsetAdjustment = self.getContentOffsetAdjustment(contentSizeBefore: self.layoutModel!.contentSize, boundsBefore: self.collectionView!.bounds, contentSizeAfter: newModel.model.contentSize, boundsAfer: newBounds).cgPoint
-            self.prepareActions.insert(.replaceModel)
-            //(context as? ModelBasedCollectionViewLayoutInvalidationContext)?.invalidateModelBasedLayoutData = true
-        }
+        self.invalidateForSizeChange(newBounds: newBounds, with: context)
 
         return context
     }
@@ -261,23 +235,25 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
                 return self.layoutModel(.beforeUpdate)!.layoutAttributes(forItemAt: indexPathBeforeUpdate)?.forLayout()
             } else {
                 switch self.transitionAnimation {
+                case .none:
+                    return self.layoutModel(.afterUpdate)?.layoutAttributes(forItemAt: indexPath)?.forLayout()
                 case .opacity:
-                    var layoutAttrs = self.layoutModel(.afterUpdate)!.layoutAttributes(forItemAt: indexPath)
+                    var layoutAttrs = self.layoutModel(.afterUpdate)?.layoutAttributes(forItemAt: indexPath)
                     layoutAttrs?.alpha = 0
                     return layoutAttrs?.forLayout()
                     
                 case .custom:
-                    return self.layoutModel(.afterUpdate)!.initialLayoutAttributes(forInsertedItemAt: indexPath)?.forLayout()
+                    return self.layoutModel(.afterUpdate)?.initialLayoutAttributes(forInsertedItemAt: indexPath)?.forLayout()
                 }
             }
         }
 
-        let attrs = self.layoutModel(.beforeUpdate)!.layoutAttributes(forItemAt: indexPath)
+        let attrs = self.layoutModel(.beforeUpdate)?.layoutAttributes(forItemAt: indexPath)
         return attrs?.forLayout()
     }
 
     public override final func layoutAttributesForItem(at indexPath: IndexPath) -> UICollectionViewLayoutAttributes? {
-        let layoutAttrs = self.layoutModel(.afterUpdate)!.layoutAttributes(forItemAt: indexPath)
+        let layoutAttrs = self.layoutModel(.afterUpdate)?.layoutAttributes(forItemAt: indexPath)
         //print("layout \(indexPath.section).\(indexPath.item) \(layoutAttrs!.center)")
         return layoutAttrs?.forLayout()
     }
@@ -290,27 +266,24 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
                 return nil
             } else {
                 switch self.transitionAnimation {
+                case .none:
+                    return self.layoutModel(.beforeUpdate)?.layoutAttributes(forItemAt: indexPath)?.forLayout()
+                    
                 case .opacity:
-                    var layoutAttrs = self.layoutModel(.beforeUpdate)!.layoutAttributes(forItemAt: indexPath)
+                    var layoutAttrs = self.layoutModel(.beforeUpdate)?.layoutAttributes(forItemAt: indexPath)
                     layoutAttrs?.alpha = 0
                     return layoutAttrs?.forLayout()
                     
                 case .custom:
-                    return self.layoutModel(.beforeUpdate)!.finalLayoutAttributes(forDeletedItemAt: indexPath)?.forLayout()
+                    return self.layoutModel(.beforeUpdate)?.finalLayoutAttributes(forDeletedItemAt: indexPath)?.forLayout()
                 }
                 
             }
         }
 
-        let attrs = self.layoutModel(.afterUpdate)!.layoutAttributes(forItemAt: indexPath)
+        let attrs = self.layoutModel(.afterUpdate)?.layoutAttributes(forItemAt: indexPath)
         return attrs?.forLayout()
     }
-}
-
-private struct PrepareActions: OptionSet {
-    let rawValue: UInt
-    
-    static let replaceModel = PrepareActions(rawValue: 1 << 0)
 }
 
 

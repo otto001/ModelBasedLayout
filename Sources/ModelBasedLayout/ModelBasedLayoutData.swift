@@ -10,9 +10,10 @@ import UIKit
 
 
 public struct ModelBasedLayoutData {
-    public let collectionViewSize: CGSize
-    public let itemsCount: Int
     
+    public let collectionViewSize: CGSize
+    
+    public let itemsCount: Int
     public let sections: [SectionData]
     
     
