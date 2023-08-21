@@ -1,18 +1,14 @@
 //
-//  ModelBasedLayoutData.swift
-//  ModelBasedCollectionView
+//  DataSourceCounts.swift
+//  
 //
-//  Created by Matteo Ludwig on 18.07.23.
+//  Created by Matteo Ludwig on 16.08.23.
 //
 
 import UIKit
 
 
-
-public struct ModelBasedLayoutData {
-    
-    public let collectionViewSize: CGSize
-    
+public struct DataSourceCounts {
     public let itemsCount: Int
     public let sections: [SectionData]
     
@@ -36,7 +32,7 @@ public struct ModelBasedLayoutData {
         sections.count
     }
     
-    init(collectionView: UICollectionView, overrideCollectionViewSize: CGSize?) {
+    init(collectionView: UICollectionView) {
         
         let sectionCount = collectionView.numberOfSections
         
@@ -49,12 +45,11 @@ public struct ModelBasedLayoutData {
             itemsCount += sectionItemsCount
         }
 
-        self.collectionViewSize = overrideCollectionViewSize ?? collectionView.bounds.size
         self.itemsCount = itemsCount
         self.sections = sections
     }
     
-    init(sections sectionCounts: [Int], collectionViewSize: CGSize) {
+    init(sections sectionCounts: [Int]) {
         var itemsCount = 0
         var sections = [SectionData]()
         
@@ -63,7 +58,6 @@ public struct ModelBasedLayoutData {
             itemsCount += sectionItemsCount
         }
         
-        self.collectionViewSize = collectionViewSize
         self.itemsCount = itemsCount
         self.sections = sections
     }

@@ -16,17 +16,17 @@ struct DataBatchUpdate {
     
     private var sectionIndiciesAfterUpdate: [Int: Int?] = [:]
     
-    private var layoutData: ModelBasedLayoutData
+    private var dataSourceCounts: DataSourceCounts
     
-    init(layoutData: ModelBasedLayoutData, updateItems: [DataUpdate]) {
-        self.layoutData = layoutData
+    init(dataSourceCounts: DataSourceCounts, updateItems: [DataUpdate]) {
+        self.dataSourceCounts = dataSourceCounts
         
         addUpdateItems(updateItems)
         buildReverseAccessors()
     }
     
-    init(layoutData: ModelBasedLayoutData, updateItems: [UICollectionViewUpdateItem]) {
-        self = .init(layoutData: layoutData, updateItems: updateItems.compactMap {DataUpdate($0)})
+    init(dataSourceCounts: DataSourceCounts, updateItems: [UICollectionViewUpdateItem]) {
+        self = .init(dataSourceCounts: dataSourceCounts, updateItems: updateItems.compactMap {DataUpdate($0)})
     }
     
     func indexPathAfterUpdate(for indexPath: IndexPath) -> IndexPath? {
@@ -66,8 +66,8 @@ struct DataBatchUpdate {
             }
         }
         
-        var deletedItemsPerSection: [[Int]] = Array(repeating: [], count: layoutData.numberOfSections + insertedSections.count)
-        var insertedItemsPerSection: [[Int]] = Array(repeating: [], count: layoutData.numberOfSections + insertedSections.count)
+        var deletedItemsPerSection: [[Int]] = Array(repeating: [], count: dataSourceCounts.numberOfSections + insertedSections.count)
+        var insertedItemsPerSection: [[Int]] = Array(repeating: [], count: dataSourceCounts.numberOfSections + insertedSections.count)
         
         
         for dataUpdate in dataUpdates[index...] {
@@ -83,9 +83,9 @@ struct DataBatchUpdate {
             }
         }
         
-        sectionIndiciesAfterUpdate = calculateIndexShifts(numberOfItems: layoutData.numberOfSections, deletions: deletedSections, insertions: insertedSections)
+        sectionIndiciesAfterUpdate = calculateIndexShifts(numberOfItems: dataSourceCounts.numberOfSections, deletions: deletedSections, insertions: insertedSections)
         
-        for (sectionIndexBeforeUpdate, section) in layoutData.sections.enumerated() {
+        for (sectionIndexBeforeUpdate, section) in dataSourceCounts.sections.enumerated() {
             
             guard let sectionIndexAfterUpdate = sectionIndiciesAfterUpdate[sectionIndexBeforeUpdate]! else {
                 // No need to explcitlty delete items of a section if the entire section is deleted

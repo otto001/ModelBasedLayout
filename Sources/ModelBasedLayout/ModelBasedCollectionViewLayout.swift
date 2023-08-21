@@ -23,7 +23,8 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
     
     // MARK: Layout Model & Data
     struct Layout {
-        let data: ModelBasedLayoutData
+        let geometryInfo: GeometryInfo
+        let dataSourceCounts: DataSourceCounts
         var model: ModelType
     }
     
@@ -43,12 +44,21 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
         }
     }
     
-    private func layoutData(_ state: UpdateState) -> ModelBasedLayoutData? {
+    private func dataSourceCounts(_ state: UpdateState) -> DataSourceCounts? {
         switch state {
         case .beforeUpdate:
-            return layoutBeforeUpdate?.data
+            return layoutBeforeUpdate?.dataSourceCounts
         case .afterUpdate:
-            return layoutAfterUpdate?.data
+            return layoutAfterUpdate?.dataSourceCounts
+        }
+    }
+    
+    private func geometryInfo(_ state: UpdateState) -> GeometryInfo? {
+        switch state {
+        case .beforeUpdate:
+            return layoutBeforeUpdate?.geometryInfo
+        case .afterUpdate:
+            return layoutAfterUpdate?.geometryInfo
         }
     }
     
@@ -62,16 +72,19 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
     
 
     
-    private(set) var modelClosure: (_ layoutData: ModelBasedLayoutData) -> ModelType
+    private(set) var modelClosure: (_ dataSourceCounts: DataSourceCounts, _ geometryInfo: GeometryInfo) -> ModelType
     
-    public init(_ model: @escaping (_ layoutData: ModelBasedLayoutData) -> ModelType) {
+    public init(_ model: @escaping (_ dataSourceCounts: DataSourceCounts, _ geometryInfo: GeometryInfo) -> ModelType) {
         self.modelClosure = model
         super.init()
     }
     
     private func makeNewLayout(overrideCollectionViewSize: CGSize? = nil) -> Layout {
-        let layoutData = ModelBasedLayoutData(collectionView: self.collectionView!, overrideCollectionViewSize: overrideCollectionViewSize)
-        return Layout(data: layoutData, model: modelClosure(layoutData))
+        let dataSourceCounts = DataSourceCounts(collectionView: self.collectionView!)
+        let geometryInfo = GeometryInfo(viewSize: overrideCollectionViewSize ?? self.collectionView!.bounds.size,
+                                        adjustedContentInset: self.collectionView!.adjustedContentInset,
+                                        safeAreaInsets: self.collectionView!.safeAreaInsets)
+        return Layout(geometryInfo: geometryInfo, dataSourceCounts: dataSourceCounts, model: modelClosure(dataSourceCounts, geometryInfo))
     }
     
     required init?(coder: NSCoder) {
@@ -115,7 +128,7 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
     public override func prepare(forCollectionViewUpdates updateItems: [UICollectionViewUpdateItem]) {
         super.prepare(forCollectionViewUpdates: updateItems)
         
-        dataChange = DataBatchUpdate(layoutData: self.layoutData(.beforeUpdate)!, updateItems: updateItems)
+        dataChange = DataBatchUpdate(dataSourceCounts: self.dataSourceCounts(.beforeUpdate)!, updateItems: updateItems)
     }
     
     public override func finalizeCollectionViewUpdates() {
@@ -155,20 +168,24 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
         super.finalizeLayoutTransition()
     }
     
-    private func getContentOffsetAdjustment(contentSizeBefore: CGSize, boundsBefore: CGRect,
-                                            contentSizeAfter: CGSize, boundsAfer: CGRect) -> CGSize {
+    private func getContentOffsetAdjustment(contentSizeBefore: CGSize, geometryBefore: GeometryInfo,
+                                            contentSizeAfter: CGSize, geometryAfter: GeometryInfo) -> CGSize {
+        
         guard contentSizeBefore > .zero && contentSizeAfter > .zero  else { return .zero }
 
         let currentContentOffset = self.collectionView!.contentOffset.cgSize
 
 
-        let oldHalfBoundsSize = (boundsBefore.size/2)
-        let halfBoundsSize = (boundsAfer.size/2)
+        let halfBoundsSizeBefore = (geometryBefore.viewSize/2)
+        let halfBoundsSizeAfter = (geometryAfter.viewSize/2)
+        
+        let insetBefore = CGSize(width: geometryBefore.adjustedContentInset.left, height: geometryBefore.adjustedContentInset.top)
+        let insetAfter = CGSize(width: geometryAfter.adjustedContentInset.left, height: geometryAfter.adjustedContentInset.top)
+        let insetDiff = insetBefore - insetAfter
 
-        let scrollRatio = (currentContentOffset + oldHalfBoundsSize) / contentSizeBefore
-
-
-        return (scrollRatio * contentSizeAfter - halfBoundsSize) - currentContentOffset //.clamp(min: self.contentOffsetMin, max: self.contentOffsetMax)
+        let scrollRatio = (currentContentOffset + halfBoundsSizeBefore - insetDiff) / contentSizeBefore
+        
+        return (scrollRatio * contentSizeAfter - halfBoundsSizeAfter) - currentContentOffset
     }
     
     // MARK: Invalidation
@@ -177,14 +194,22 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
     }
     
     private func invalidateForSizeChange(newBounds: CGRect, with context: UICollectionViewLayoutInvalidationContext) {
-        if newBounds.size != self.layoutData(.afterUpdate)?.collectionViewSize,
+        if let geometryBefore = self.geometryInfo(.afterUpdate),
+           newBounds.size != geometryBefore.viewSize,
            let currentModel = self.layoutModel {
+            
+            let geometryAfter = GeometryInfo(viewSize: newBounds.size,
+                                             adjustedContentInset: self.collectionView!.adjustedContentInset,
+                                             safeAreaInsets: self.collectionView!.safeAreaInsets)
             
             let newModel = self.makeNewLayout(overrideCollectionViewSize: newBounds.size)
             let contentSizeAdjustment = newModel.model.contentSize - currentModel.contentSize
             
             context.contentSizeAdjustment = contentSizeAdjustment
-            context.contentOffsetAdjustment = self.getContentOffsetAdjustment(contentSizeBefore: self.layoutModel!.contentSize, boundsBefore: self.collectionView!.bounds, contentSizeAfter: newModel.model.contentSize, boundsAfer: newBounds).cgPoint
+            context.contentOffsetAdjustment = self.getContentOffsetAdjustment(contentSizeBefore: self.layoutModel!.contentSize,
+                                                                              geometryBefore: geometryBefore,
+                                                                              contentSizeAfter: newModel.model.contentSize,
+                                                                              geometryAfter: geometryAfter).cgPoint
         }
     }
     
@@ -210,7 +235,7 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
     
 
     public override func shouldInvalidateLayout(forBoundsChange newBounds: CGRect) -> Bool {
-        if newBounds.size != self.layoutData(.afterUpdate)?.collectionViewSize {
+        if newBounds.size != self.geometryInfo(.afterUpdate)?.viewSize {
             return true
         }
         return super.shouldInvalidateLayout(forBoundsChange: newBounds)
