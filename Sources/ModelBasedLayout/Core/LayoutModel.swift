@@ -15,7 +15,7 @@ public protocol LayoutModel {
     func transitionAnimation(forItemAt indexPath: IndexPath) -> TransitionAnimation
     func transitionAnimation(forSupplementaryViewAt indexPath: IndexPath, with elementKind: String) -> TransitionAnimation
     
-    func layoutAttributes(in rect: CGRect, for dataSourceCounts: DataSourceCounts) -> [LayoutAttributes]
+    func items(in rect: CGRect) -> [Item]?
     
     func layoutAttributes(forItemAt indexPath: IndexPath) -> LayoutAttributes?
     func initialLayoutAttributes(forInsertedItemAt indexPath: IndexPath) -> LayoutAttributes?
@@ -39,36 +39,8 @@ public extension LayoutModel {
         return .opacity
     }
     
-    func layoutAttributes(in rect: CGRect, for dataSourceCounts: DataSourceCounts) -> [LayoutAttributes] {
-        // TODO: Optimize!
-        
-        let indexPaths = (0..<dataSourceCounts.itemsCount).lazy.map { dataSourceCounts.indexPath(for: $0) }
-        
-        let cells = indexPaths.map { layoutAttributes(forItemAt: $0) }
-        let cellRange = cells.binarySearchRange { attrs in
-            if attrs!.frame.intersects(rect) {
-                return .equal
-            } else if attrs!.frame.maxY < rect.minY || attrs!.frame.maxX < rect.minX {
-                return .before
-            } else {
-                return .after
-            }
-        }
-        
-        guard let cellRange = cellRange else { return [] }
-        
-        var results = Array(cells[cellRange].compactMap {$0})
-        
-        let firstVisibleSection = 0
-        //let firstVisibleSection = cells[cellRange.lowerBound]!.indexPath.section
-        let lastVisibleSection = cells[cellRange.upperBound]!.indexPath.section
-        
-        let headers = (firstVisibleSection...lastVisibleSection)
-            .compactMap { layoutAttributes(forHeaderOfSection: $0)}
-            .filter { $0.frame.intersects(rect) }
-        results.append(contentsOf: headers)
-        
-        return results
+    func items(in rect: CGRect) -> [Item]? {
+        return nil
     }
     
     func initialLayoutAttributes(forInsertedItemAt indexPath: IndexPath) -> LayoutAttributes? {
