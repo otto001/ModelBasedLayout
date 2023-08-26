@@ -17,10 +17,10 @@ extension RandomAccessCollection where Element: Comparable & Equatable, Index: B
     /// - Returns: The index of the given element, if the element is contained in the collection. Otherwise, nil is returned.
     /// - Complexity: O(log n)
     func binarySearch(for element: Element, sortedBy: (_ lhs: Element, _ rhs: Element) -> Bool) -> Index? {
-        guard !self.isEmpty else { return nil }
+        guard !isEmpty else { return nil }
         
-        var first = self.startIndex
-        var last = self.endIndex - 1
+        var first = startIndex
+        var last = endIndex - 1
 
         var center = (first + last)/2
         
@@ -59,30 +59,77 @@ extension RandomAccessCollection where Index: BinaryInteger {
     /// - Complexity: O(log n)
     /// - Note: Binary search requires the collection to be sorted in some fashion. How exactly is not important to this function, but the comparison closure must return consistent and acurate information for the algorithm to succeed.
     func binarySearch(comparision: @escaping (_ element: Element) -> BinarySearchComparisonResult) -> Index? {
-        guard !self.isEmpty else { return nil }
+        guard !isEmpty else { return nil }
         
-        var first = self.startIndex
-        var last = self.endIndex - 1
+        var first = startIndex
+        var last = endIndex - 1
         
-        var center = (first + last)/2
-        
-        while true {
+        while first <= last {
+            let center = (first + last)/2
             
             switch comparision(self[center]) {
             case .equal:
                 return center
-            case .before:
-                last = center - 1
             case .after:
+                last = center - 1
+            case .before:
                 first = center + 1
             }
-            
-            guard first <= last else {
-                return nil
-            }
-            center = (first + last)/2
         }
         
         fatalError("binarySearch error, please check your comparison closure")
+    }
+    
+    
+    func binarySearchRange(comparision: @escaping (_ element: Element) -> BinarySearchComparisonResult) -> ClosedRange<Index>? {
+        guard !isEmpty else { return nil }
+        
+        func findLowerBound() -> Index? {
+            var first = startIndex
+            var last = endIndex - 1
+            
+            while first < last {
+                let center = (first + last)/2
+                
+                switch comparision(self[center]) {
+                case .equal, .after:
+                    last = center
+                case .before:
+                    first = center + 1
+                }
+            }
+            
+            if comparision(self[first]) == .equal {
+                return first
+            }
+            
+            return nil
+        }
+        
+        func findUpperBound() -> Index? {
+            var first = startIndex
+            var last = endIndex - 1
+            
+            while first < last {
+                let center = (first + last +  1)/2
+                
+                switch comparision(self[center]) {
+                case .equal, .before:
+                    first = center
+                case .after:
+                    last = center - 1
+                }
+            }
+            
+            if comparision(self[last]) == .equal {
+                return last
+            }
+            
+            return nil
+        }
+        
+        guard let lowerBound = findLowerBound(), let upperBound = findUpperBound() else { return nil }
+        
+        return lowerBound...upperBound
     }
 }

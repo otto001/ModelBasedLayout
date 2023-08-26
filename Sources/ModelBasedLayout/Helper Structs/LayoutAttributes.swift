@@ -64,7 +64,7 @@ public struct LayoutAttributes {
     public init(forSupplementaryViewAt indexPath: IndexPath, elementKind: String?,
          frame: CGRect = .zero, zIndex: Int = 0,
          alpha: CGFloat = 1, isHidden: Bool = false,
-         transform: CGAffineTransform = .identity, transform3D: CATransform3D = .init()) {
+         transform: CGAffineTransform = .identity, transform3D: CATransform3D = .identity) {
         self.indexPath = indexPath
         self.elementCategory = .supplementaryView
         self.elementKind = elementKind
@@ -79,7 +79,7 @@ public struct LayoutAttributes {
     public init(forDecorativeViewAt indexPath: IndexPath, elementKind: String?,
          frame: CGRect = .zero, zIndex: Int = 0,
          alpha: CGFloat = 1, isHidden: Bool = false,
-         transform: CGAffineTransform = .identity, transform3D: CATransform3D = .init()) {
+         transform: CGAffineTransform = .identity, transform3D: CATransform3D = .identity) {
         self.indexPath = indexPath
         self.elementCategory = .decorationView
         self.elementKind = elementKind

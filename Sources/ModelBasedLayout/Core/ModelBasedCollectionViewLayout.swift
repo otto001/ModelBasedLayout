@@ -12,7 +12,6 @@ import UIKit
 // MARK: ModelBasedCollectionViewLayout
 public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectionViewLayout {
 
-    public var transitionAnimation: TransitionAnimation = .opacity
     
     enum UpdateState {
         case beforeUpdate, afterUpdate
@@ -26,6 +25,7 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
         let geometryInfo: GeometryInfo
         let dataSourceCounts: DataSourceCounts
         var model: ModelType
+        var headerController: HeaderLayoutData
     }
     
     private var layoutAfterUpdate: Layout?
@@ -84,7 +84,14 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
         let geometryInfo = GeometryInfo(viewSize: overrideCollectionViewSize ?? self.collectionView!.bounds.size,
                                         adjustedContentInset: self.collectionView!.adjustedContentInset,
                                         safeAreaInsets: self.collectionView!.safeAreaInsets)
-        return Layout(geometryInfo: geometryInfo, dataSourceCounts: dataSourceCounts, model: modelClosure(dataSourceCounts, geometryInfo))
+        let model = modelClosure(dataSourceCounts, geometryInfo)
+        let headerController = HeaderLayoutData(numberOfSections: dataSourceCounts.numberOfSections, zIndexOffset: dataSourceCounts.itemsCount + 1) {
+            self.collectionView?.bounds ?? .zero
+        } verticalPositionProvider: { section in
+            model.layoutAttributes(forHeaderOfSection: section)!.frame.origin.x
+        }
+
+        return Layout(geometryInfo: geometryInfo, dataSourceCounts: dataSourceCounts, model: model)
     }
     
     required init?(coder: NSCoder) {
@@ -107,7 +114,6 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
             self.layoutBeforeUpdate = self.layoutAfterUpdate
             self.layoutAfterUpdate = self.makeNewLayout()
         }
-        
         
         super.prepare()
         
@@ -244,7 +250,7 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
     // MARK: Attrs in Rect
     
     public override final func layoutAttributesForElements(in rect: CGRect) -> [UICollectionViewLayoutAttributes]? {
-        return self.layoutModel(.afterUpdate)!.layoutAttributes(in: rect).compactMap { $0.forLayout() }
+        return self.layoutModel(.afterUpdate)!.layoutAttributes(in: rect, for: dataSourceCounts(.afterUpdate)!).compactMap { $0.forLayout() }
     }
     
     // MARK: Items
@@ -259,7 +265,7 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
             if let indexPathBeforeUpdate = dataChange.indexPathBeforeUpdate(for: indexPath) {
                 return self.layoutModel(.beforeUpdate)!.layoutAttributes(forItemAt: indexPathBeforeUpdate)?.forLayout()
             } else {
-                switch self.transitionAnimation {
+                switch (self.layoutModel(.afterUpdate)?.transitionAnimation(forItemAt: indexPath) ?? .none) {
                 case .none:
                     return self.layoutModel(.afterUpdate)?.layoutAttributes(forItemAt: indexPath)?.forLayout()
                 case .opacity:
@@ -290,7 +296,7 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
             if dataChange.indexPathAfterUpdate(for: indexPath) != nil {
                 return nil
             } else {
-                switch self.transitionAnimation {
+                switch (self.layoutModel(.beforeUpdate)?.transitionAnimation(forItemAt: indexPath) ?? .none) {
                 case .none:
                     return self.layoutModel(.beforeUpdate)?.layoutAttributes(forItemAt: indexPath)?.forLayout()
                     
@@ -307,6 +313,67 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
         }
 
         let attrs = self.layoutModel(.afterUpdate)?.layoutAttributes(forItemAt: indexPath)
+        return attrs?.forLayout()
+    }
+    
+    
+    
+    // MARK: Supplementary Views
+    public override final func initialLayoutAttributesForAppearingSupplementaryElement(ofKind elementKind: String, at indexPath: IndexPath) -> UICollectionViewLayoutAttributes? {
+        //print("Initial \(indexPath.section).\(indexPath.item)")
+//        guard self.transitioningFrom == nil else {
+//            return self.layoutAttributesForItem(at: indexPath)
+//        }
+        
+        if let dataChange = dataChange {
+            if let indexPathBeforeUpdate = dataChange.indexPathBeforeUpdate(for: indexPath) {
+                return self.layoutModel(.beforeUpdate)!.layoutAttributes(forSupplementaryViewAt: indexPathBeforeUpdate, with: elementKind)?.forLayout()
+            } else {
+                switch (self.layoutModel(.afterUpdate)?.transitionAnimation(forSupplementaryViewAt: indexPath, with: elementKind) ?? .none) {
+                case .none:
+                    return self.layoutModel(.afterUpdate)?.layoutAttributes(forSupplementaryViewAt: indexPath, with: elementKind)?.forLayout()
+                case .opacity:
+                    var layoutAttrs = self.layoutModel(.afterUpdate)?.layoutAttributes(forSupplementaryViewAt: indexPath, with: elementKind)
+                    layoutAttrs?.alpha = 0
+                    return layoutAttrs?.forLayout()
+                    
+                case .custom:
+                    return self.layoutModel(.afterUpdate)?.initialLayoutAttributes(forInsertedSupplementaryViewAt: indexPath, with: elementKind)?.forLayout()
+                }
+            }
+        }
+
+        let attrs = self.layoutModel(.beforeUpdate)?.layoutAttributes(forSupplementaryViewAt: indexPath, with: elementKind)
+        return attrs?.forLayout()
+    }
+    
+    public override final func layoutAttributesForSupplementaryView(ofKind elementKind: String, at indexPath: IndexPath) -> UICollectionViewLayoutAttributes? {
+        let attrs = self.layoutModel(.afterUpdate)?.layoutAttributes(forSupplementaryViewAt: indexPath, with: elementKind)
+        return attrs?.forLayout()
+    }
+    
+    public override final func finalLayoutAttributesForDisappearingSupplementaryElement(ofKind elementKind: String, at indexPath: IndexPath) -> UICollectionViewLayoutAttributes? {
+        //print("Final \(indexPath.section).\(indexPath.item)")
+        
+        if let dataChange = dataChange {
+            if dataChange.indexPathAfterUpdate(for: indexPath) != nil {
+                return nil
+            } else {
+                switch (self.layoutModel(.beforeUpdate)?.transitionAnimation(forSupplementaryViewAt: indexPath, with: elementKind) ?? .none)  {
+                case .none:
+                    return self.layoutModel(.beforeUpdate)?.layoutAttributes(forSupplementaryViewAt: indexPath, with: elementKind)?.forLayout()
+                case .opacity:
+                    var layoutAttrs = self.layoutModel(.beforeUpdate)?.layoutAttributes(forSupplementaryViewAt: indexPath, with: elementKind)
+                    layoutAttrs?.alpha = 0
+                    return layoutAttrs?.forLayout()
+                    
+                case .custom:
+                    return self.layoutModel(.beforeUpdate)?.finalLayoutAttributes(forDeletedSupplementaryViewAt: indexPath, with: elementKind)?.forLayout()
+                }
+            }
+        }
+
+        let attrs = self.layoutModel(.afterUpdate)?.layoutAttributes(forSupplementaryViewAt: indexPath, with: elementKind)
         return attrs?.forLayout()
     }
 }
