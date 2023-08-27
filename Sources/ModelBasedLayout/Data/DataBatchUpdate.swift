@@ -107,6 +107,8 @@ struct DataBatchUpdate {
     }
     
     private mutating func buildReverseAccessors() {
+        indexPathsBeforeUpdate.removeAll()
+        
         for (indexPathBeforeUpdate, indexPathAfterUpdate) in indexPathsAfterUpdate {
             if let indexPathAfterUpdate = indexPathAfterUpdate {
                 indexPathsBeforeUpdate[indexPathAfterUpdate] = indexPathBeforeUpdate
@@ -117,7 +119,7 @@ struct DataBatchUpdate {
 
 
 
-func calculateIndexShifts(numberOfItems: Int, deletions: [Int], insertions: [Int]) -> [Int: Int?] {
+private func calculateIndexShifts(numberOfItems: Int, deletions: [Int], insertions: [Int]) -> [Int: Int?] {
     var result: [Int: Int?] = [:]
     
     var shiftedIndicies = Array(repeating: 0, count: numberOfItems)

@@ -10,9 +10,9 @@ import UIKit
 
 public struct GeometryInfo {
     
-    public let viewSize: CGSize
-    public let adjustedContentInset: UIEdgeInsets
-    public let safeAreaInsets: UIEdgeInsets
+    public var viewSize: CGSize
+    public var adjustedContentInset: UIEdgeInsets
+    public var safeAreaInsets: UIEdgeInsets
     
     init(viewSize: CGSize, adjustedContentInset: UIEdgeInsets, safeAreaInsets: UIEdgeInsets) {
         self.viewSize = viewSize

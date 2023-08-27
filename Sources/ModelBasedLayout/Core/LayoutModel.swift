@@ -22,7 +22,7 @@ public protocol LayoutModel {
     func finalLayoutAttributes(forDeletedItemAt indexPath: IndexPath) -> LayoutAttributes?
     
     func layoutAttributes(forHeaderOfSection section: Int) -> LayoutAttributes?
-    var sectionHeadersSticky: Bool { get }
+    var pinSectionHeadersToEdges: Edges { get }
     
     func layoutAttributes(forAdditionalSupplementaryViewAt indexPath: IndexPath, with elementKind: String) -> LayoutAttributes?
     func initialLayoutAttributes(forInsertedSupplementaryViewAt indexPath: IndexPath, with elementKind: String) -> LayoutAttributes?
@@ -55,7 +55,7 @@ public extension LayoutModel {
         return nil
     }
     
-    var sectionHeadersSticky: Bool { false }
+    var pinSectionHeadersToEdges: Edges { [] }
     
     func initialLayoutAttributes(forInsertedSupplementaryViewAt indexPath: IndexPath, with elementKind: String) -> LayoutAttributes? {
         return layoutAttributes(forSupplementaryViewAt: indexPath, with: elementKind)

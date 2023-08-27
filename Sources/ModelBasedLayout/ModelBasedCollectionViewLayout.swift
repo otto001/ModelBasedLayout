@@ -23,6 +23,9 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
         return self.transitioningFrom != nil || self.transitioningTo != nil
     }
     
+    /// Needed to avoid endless cycles in invalidation
+    private var isInvalidating: Bool = false
+    
     public init(_ model: @escaping (_ dataSourceCounts: DataSourceCounts, _ geometryInfo: GeometryInfo) -> ModelType) {
 
         super.init()
@@ -30,6 +33,12 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
             DataSourceCounts(collectionView: self.collectionView!)
         } geometryInfo: {
             GeometryInfo(collectionView: self.collectionView!)
+        } visibleBoundsProvider: { [weak self] in
+            guard let collectionView = self?.collectionView else { return .zero }
+            return CGRect(x: collectionView.bounds.minX + collectionView.safeAreaInsets.left,
+                   y: collectionView.bounds.minY + collectionView.safeAreaInsets.top,
+                   width: collectionView.frame.width - collectionView.safeAreaInsets.left - collectionView.safeAreaInsets.right,
+                   height: collectionView.frame.height - collectionView.safeAreaInsets.top - collectionView.safeAreaInsets.bottom)
         }
     }
     
@@ -111,22 +120,33 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
     
  
     public override func invalidateLayout(with context: UICollectionViewLayoutInvalidationContext) {
+        //print("invalidateLayout(with context", context.contentOffsetAdjustment)
+        
+        //guard !self.isInvalidating else { return }
+        
+        //self.isInvalidating = true
         super.invalidateLayout(with: context)
+        //self.isInvalidating = false
         
-        if let collectionView = self.collectionView {
-            self.controller.invalidateForSizeChange(newBounds: collectionView.bounds, with: context, for: collectionView)
-        }
+        //if !self.isInvalidating {
+//            if let collectionView = self.collectionView {
+//                self.controller.configureInvalidationContext(forBoundsChange: collectionView.bounds, with: context, contentOffset: collectionView.contentOffset)
+//            }
+            
+            self.controller.invalidateLayout(with: context)
+        //}
         
-        if context.invalidateDataSourceCounts || context.invalidateEverything || context.contentSizeAdjustment != .zero  || context.contentOffsetAdjustment != .zero  {
-            self.controller.needsToReplaceModel()
-        }
+        //self.isInvalidating = true
+        
+        //self.isInvalidating = false
+        
     }
     
     public override func invalidationContext(forBoundsChange newBounds: CGRect) -> UICollectionViewLayoutInvalidationContext {
         let context = super.invalidationContext(forBoundsChange: newBounds)
         
         if let collectionView = self.collectionView {
-            self.controller.invalidateForSizeChange(newBounds: newBounds, with: context, for: collectionView)
+            self.controller.configureInvalidationContext(forBoundsChange: newBounds, with: context, contentOffset: collectionView.contentOffset)
         }
         
         return context
@@ -134,10 +154,8 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
     
 
     public override func shouldInvalidateLayout(forBoundsChange newBounds: CGRect) -> Bool {
-        if newBounds.size != self.controller.geometryInfo(.afterUpdate)?.viewSize {
-            return true
-        }
-        return super.shouldInvalidateLayout(forBoundsChange: newBounds)
+        print("shouldInvalidateLayout", newBounds)
+        return self.controller.shouldInvalidateLayout(forBoundsChange: newBounds) || super.shouldInvalidateLayout(forBoundsChange: newBounds)
     }
     
     // MARK: Attrs in Rect

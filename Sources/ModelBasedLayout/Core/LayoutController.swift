@@ -16,26 +16,33 @@ class LayoutController<ModelType: LayoutModel> {
     private var prepareActions: PrepareActions = []
     private var dataChange: DataBatchUpdate? = nil
     
+    private var stickyControllers: [String: StickyController] = [:]
+    private var lastInvalidatedBounds: CGRect? = nil
+    
     // MARK: Layout Model & Data
     struct Layout {
         let geometryInfo: GeometryInfo
         let dataSourceCounts: DataSourceCounts
+        let stickyController: StickyController
         var model: ModelType
     }
     
     private var layoutAfterUpdate: Layout?
     private var layoutBeforeUpdate: Layout?
     
-    private(set) var modelClosure: (_ dataSourceCounts: DataSourceCounts, _ geometryInfo: GeometryInfo) -> ModelType
-    private(set) var dataSourceCountsClosure: () -> DataSourceCounts
-    private(set) var geometryInfoClosure: () -> GeometryInfo
+    private(set) var modelProvider: (_ dataSourceCounts: DataSourceCounts, _ geometryInfo: GeometryInfo) -> ModelType
+    private(set) var dataSourceCountsProvider: () -> DataSourceCounts
+    private(set) var geometryInfoProvider: () -> GeometryInfo
+    private(set) var visibleBoundsProvider: () -> CGRect
     
     init(_ model: @escaping (_ dataSourceCounts: DataSourceCounts, _ geometryInfo: GeometryInfo) -> ModelType,
          dataSourceCounts: @escaping () -> DataSourceCounts,
-         geometryInfo: @escaping () -> GeometryInfo) {
-        self.modelClosure = model
-        self.dataSourceCountsClosure = dataSourceCounts
-        self.geometryInfoClosure = geometryInfo
+         geometryInfo: @escaping () -> GeometryInfo,
+         visibleBoundsProvider: @escaping () -> CGRect) {
+        self.modelProvider = model
+        self.dataSourceCountsProvider = dataSourceCounts
+        self.geometryInfoProvider = geometryInfo
+        self.visibleBoundsProvider = visibleBoundsProvider
     }
     
     func layoutModel(_ state: UpdateState) -> ModelType? {
@@ -66,17 +73,32 @@ class LayoutController<ModelType: LayoutModel> {
     }
     
     func makeNewLayout(dataSourceCounts: DataSourceCounts? = nil, geometryInfo: GeometryInfo? = nil) -> Layout {
-        let dataSourceCounts = dataSourceCounts ?? dataSourceCountsClosure()
-        let geometryInfo = geometryInfo ?? geometryInfoClosure()
+        let dataSourceCounts = dataSourceCounts ?? dataSourceCountsProvider()
+        let geometryInfo = geometryInfo ?? geometryInfoProvider()
         
-        let model = modelClosure(dataSourceCounts, geometryInfo)
+        let model = modelProvider(dataSourceCounts, geometryInfo)
+        let stickyController = StickyController(stickyEdges: model.pinSectionHeadersToEdges,
+                                                dataSourceCounts: dataSourceCounts,
+                                                visibleBoundsProvider: self.visibleBoundsProvider) { section in
+            model.layoutAttributes(forHeaderOfSection: section)
+        }
         
-        return Layout(geometryInfo: geometryInfo, dataSourceCounts: dataSourceCounts, model: model)
+        return Layout(geometryInfo: geometryInfo, dataSourceCounts: dataSourceCounts, stickyController: stickyController, model: model)
     }
     
     func needsToReplaceModel() {
         self.prepareActions.insert(.replaceModel)
     }
+    
+//    private func stickyController(for elementKind: String) -> StickyController {
+//        if let stickyController = self.stickyControllers[elementKind] {
+//            return stickyController
+//        }
+//
+//        self.stickyControllers[elementKind] = StickyController()
+//
+//        return self.stickyControllers[elementKind]!
+//    }
     
     // MARK: Prepare
     func prepare() {
@@ -121,26 +143,52 @@ class LayoutController<ModelType: LayoutModel> {
         return (scrollRatio * contentSizeAfter - halfBoundsSizeAfter) - currentContentOffset
     }
     
+    private func usesStickyViews() -> Bool {
+        (self.layoutAfterUpdate?.stickyController.stickyEdges ?? .none) != .none
+    }
     
     // MARK: Invalidation
-    func invalidateForSizeChange(newBounds: CGRect, with context: UICollectionViewLayoutInvalidationContext, for collectionView: UICollectionView) {
+    func shouldInvalidateLayout(forBoundsChange newBounds: CGRect) -> Bool {
+        if newBounds.size != self.geometryInfo(.afterUpdate)?.viewSize {
+            return true
+        }
+        if self.usesStickyViews() && self.lastInvalidatedBounds != newBounds {
+            self.lastInvalidatedBounds = newBounds
+            return true
+        }
+        return false
+    }
+    
+    func configureInvalidationContext(forBoundsChange newBounds: CGRect, with context: UICollectionViewLayoutInvalidationContext, contentOffset: CGPoint) {
         if let geometryBefore = self.geometryInfo(.afterUpdate),
            newBounds.size != geometryBefore.viewSize,
-           let currentModel = self.layoutModel(.afterUpdate) {
+           let currentModel = self.layoutModel(.afterUpdate),
+            context.contentOffsetAdjustment == .zero {
+            // viewSize change
             
-            let geometryAfter = GeometryInfo(viewSize: newBounds.size,
-                                             adjustedContentInset: collectionView.adjustedContentInset,
-                                             safeAreaInsets: collectionView.safeAreaInsets)
+            var geometryAfter = geometryInfoProvider()
+            geometryAfter.viewSize = newBounds.size
             
             let newLayout = self.makeNewLayout(geometryInfo: geometryAfter)
-            let contentSizeAdjustment = newLayout.model.contentSize - currentModel.contentSize
             
-            context.contentSizeAdjustment = contentSizeAdjustment
+            context.contentSizeAdjustment = newLayout.model.contentSize - currentModel.contentSize
             context.contentOffsetAdjustment = self.getContentOffsetAdjustment(contentSizeBefore: currentModel.contentSize,
                                                                               geometryBefore: geometryBefore,
                                                                               contentSizeAfter: newLayout.model.contentSize,
                                                                               geometryAfter: geometryAfter,
-                                                                              contentOffset: collectionView.contentOffset).cgPoint
+                                                                              contentOffset: contentOffset).cgPoint
+        }
+        
+        if self.usesStickyViews(), let stickyController = self.layoutAfterUpdate?.stickyController {
+            let rect = visibleBoundsProvider().union(newBounds)
+            let invalidation = stickyController.indexPathsToInvalidate(in: rect)
+            context.invalidateSupplementaryElements(ofKind: UICollectionView.elementKindSectionHeader, at: invalidation)
+        }
+    }
+    
+    func invalidateLayout(with context: UICollectionViewLayoutInvalidationContext) {
+        if context.invalidateDataSourceCounts || context.invalidateEverything || context.contentSizeAdjustment != .zero  || context.contentOffsetAdjustment != .zero  {
+            self.needsToReplaceModel()
         }
     }
     
@@ -166,13 +214,14 @@ class LayoutController<ModelType: LayoutModel> {
         
         var results = Array(cells[cellRange].compactMap {$0})
         
-        let firstVisibleSection = 0
-        //let firstVisibleSection = cells[cellRange.lowerBound]!.indexPath.section
-        let lastVisibleSection = cells[cellRange.upperBound]!.indexPath.section
         
-        let headers = (firstVisibleSection...lastVisibleSection)
-            .compactMap { self.layoutAttributesForSupplementaryView(ofKind: UICollectionView.elementKindSectionHeader, at: IndexPath(item: 0, section: $0))}
-            .filter { $0.frame.intersects(rect) }
+        let firstVisibleSection = cells[cellRange.lowerBound]!.indexPath.section
+        let lastVisibleSection = cells[cellRange.upperBound]!.indexPath.section
+        let visibleSections = (firstVisibleSection...lastVisibleSection).map { $0 }
+        let headers = self.layoutAfterUpdate!.stickyController.layoutAttributes(in: rect, visibleSections: visibleSections)
+//        let headers = (firstVisibleSection...lastVisibleSection)
+//            .compactMap { self.layoutAttributesForSupplementaryView(ofKind: UICollectionView.elementKindSectionHeader, at: IndexPath(item: 0, section: $0))}
+//            .filter { $0.frame.intersects(rect) }
         results.append(contentsOf: headers)
         
         return results
@@ -236,54 +285,71 @@ class LayoutController<ModelType: LayoutModel> {
     
     
     // MARK: Supplementary Views
-    func initialLayoutAttributesForAppearingSupplementaryElement(ofKind elementKind: String, at indexPath: IndexPath) -> LayoutAttributes? {
-        if let dataChange = self.dataChange {
-            if let indexPathBeforeUpdate = dataChange.indexPathBeforeUpdate(for: indexPath) {
-                return self.layoutModel(.beforeUpdate)!.layoutAttributes(forSupplementaryViewAt: indexPathBeforeUpdate, with: elementKind)
-            } else {
-                switch (self.layoutModel(.afterUpdate)?.transitionAnimation(forSupplementaryViewAt: indexPath, with: elementKind) ?? .none) {
-                case .none:
-                    return self.layoutModel(.afterUpdate)?.layoutAttributes(forSupplementaryViewAt: indexPath, with: elementKind)
-                case .opacity:
-                    var layoutAttrs = self.layoutModel(.afterUpdate)?.layoutAttributes(forSupplementaryViewAt: indexPath, with: elementKind)
-                    layoutAttrs?.alpha = 0
-                    return layoutAttrs
-                    
-                case .custom:
-                    return self.layoutModel(.afterUpdate)?.initialLayoutAttributes(forInsertedSupplementaryViewAt: indexPath, with: elementKind)
-                }
-            }
+    
+    private func layoutAttributes(forSupplementaryViewOfKind elementKind: String, at indexPath: IndexPath, state: UpdateState) -> LayoutAttributes? {
+        let layout = state == .afterUpdate ? layoutAfterUpdate : layoutBeforeUpdate
+        
+        switch elementKind {
+        case UICollectionView.elementKindSectionHeader:
+            return layout?.stickyController.layoutAttributes(for: indexPath.section)
+        default:
+            return layout?.model.layoutAttributes(forSupplementaryViewAt: indexPath, with: elementKind)
         }
         
-        let attrs = self.layoutModel(.beforeUpdate)?.layoutAttributes(forSupplementaryViewAt: indexPath, with: elementKind)
+    }
+    
+    func initialLayoutAttributesForAppearingSupplementaryElement(ofKind elementKind: String, at indexPath: IndexPath) -> LayoutAttributes? {
+        // TODO: Data Change
+        
+//        if let dataChange = self.dataChange {
+//            if let indexPathBeforeUpdate = dataChange.indexPathBeforeUpdate(for: indexPath) {
+//                return self.layoutModel(.beforeUpdate)!.layoutAttributes(forSupplementaryViewAt: indexPathBeforeUpdate, with: elementKind)
+//            } else {
+//                switch (self.layoutModel(.afterUpdate)?.transitionAnimation(forSupplementaryViewAt: indexPath, with: elementKind) ?? .none) {
+//                case .none:
+//                    return self.layoutModel(.afterUpdate)?.layoutAttributes(forSupplementaryViewAt: indexPath, with: elementKind)
+//                case .opacity:
+//                    var layoutAttrs = self.layoutModel(.afterUpdate)?.layoutAttributes(forSupplementaryViewAt: indexPath, with: elementKind)
+//                    layoutAttrs?.alpha = 0
+//                    return layoutAttrs
+//
+//                case .custom:
+//                    return self.layoutModel(.afterUpdate)?.initialLayoutAttributes(forInsertedSupplementaryViewAt: indexPath, with: elementKind)
+//                }
+//            }
+//        }
+        
+        let attrs = self.layoutAttributes(forSupplementaryViewOfKind: elementKind, at: indexPath, state: .beforeUpdate)
         return attrs
     }
     
     func layoutAttributesForSupplementaryView(ofKind elementKind: String, at indexPath: IndexPath) -> LayoutAttributes? {
-        let attrs = self.layoutModel(.afterUpdate)?.layoutAttributes(forSupplementaryViewAt: indexPath, with: elementKind)
+        let attrs = self.layoutAttributes(forSupplementaryViewOfKind: elementKind, at: indexPath, state: .afterUpdate)
         return attrs
     }
     
     func finalLayoutAttributesForDisappearingSupplementaryElement(ofKind elementKind: String, at indexPath: IndexPath) -> LayoutAttributes? {
-        if let dataChange = self.dataChange {
-            if dataChange.indexPathAfterUpdate(for: indexPath) != nil {
-                return nil
-            } else {
-                switch (self.layoutModel(.beforeUpdate)?.transitionAnimation(forSupplementaryViewAt: indexPath, with: elementKind) ?? .none)  {
-                case .none:
-                    return self.layoutModel(.beforeUpdate)?.layoutAttributes(forSupplementaryViewAt: indexPath, with: elementKind)
-                case .opacity:
-                    var layoutAttrs = self.layoutModel(.beforeUpdate)?.layoutAttributes(forSupplementaryViewAt: indexPath, with: elementKind)
-                    layoutAttrs?.alpha = 0
-                    return layoutAttrs
-                    
-                case .custom:
-                    return self.layoutModel(.beforeUpdate)?.finalLayoutAttributes(forDeletedSupplementaryViewAt: indexPath, with: elementKind)
-                }
-            }
-        }
+        // TODO: Data Change
         
-        let attrs = self.layoutModel(.afterUpdate)?.layoutAttributes(forSupplementaryViewAt: indexPath, with: elementKind)
+//        if let dataChange = self.dataChange {
+//            if dataChange.indexPathAfterUpdate(for: indexPath) != nil {
+//                return nil
+//            } else {
+//                switch (self.layoutModel(.beforeUpdate)?.transitionAnimation(forSupplementaryViewAt: indexPath, with: elementKind) ?? .none)  {
+//                case .none:
+//                    return self.layoutModel(.beforeUpdate)?.layoutAttributes(forSupplementaryViewAt: indexPath, with: elementKind)
+//                case .opacity:
+//                    var layoutAttrs = self.layoutModel(.beforeUpdate)?.layoutAttributes(forSupplementaryViewAt: indexPath, with: elementKind)
+//                    layoutAttrs?.alpha = 0
+//                    return layoutAttrs
+//
+//                case .custom:
+//                    return self.layoutModel(.beforeUpdate)?.finalLayoutAttributes(forDeletedSupplementaryViewAt: indexPath, with: elementKind)
+//                }
+//            }
+//        }
+        
+        let attrs = self.layoutAttributes(forSupplementaryViewOfKind: elementKind, at: indexPath, state: .afterUpdate)
         return attrs
     }
 }
