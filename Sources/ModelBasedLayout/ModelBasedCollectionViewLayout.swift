@@ -154,7 +154,7 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
     
 
     public override func shouldInvalidateLayout(forBoundsChange newBounds: CGRect) -> Bool {
-        print("shouldInvalidateLayout", newBounds)
+        //print("shouldInvalidateLayout", newBounds)
         return self.controller.shouldInvalidateLayout(forBoundsChange: newBounds) || super.shouldInvalidateLayout(forBoundsChange: newBounds)
     }
     

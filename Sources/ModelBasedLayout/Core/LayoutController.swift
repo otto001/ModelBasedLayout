@@ -200,31 +200,34 @@ class LayoutController<ModelType: LayoutModel> {
         let indexPaths = (0..<dataSourceCounts.itemsCount).lazy.map { dataSourceCounts.indexPath(for: $0) }
         
         let cells = indexPaths.map { self.layoutAttributesForItem(at: $0) }
+
         let cellRange = cells.binarySearchRange { attrs in
             if attrs!.frame.intersects(rect) {
                 return .equal
-            } else if attrs!.frame.maxY < rect.minY || attrs!.frame.maxX < rect.minX {
+            } else if attrs!.frame.maxY <= rect.minY || attrs!.frame.maxX <= rect.minX {
                 return .before
             } else {
                 return .after
             }
         }
-        
-        guard let cellRange = cellRange else { return [] }
-        
+
+        guard let cellRange = cellRange else {
+            return nil
+        }
+
         var results = Array(cells[cellRange].compactMap {$0})
         
         
-        let firstVisibleSection = cells[cellRange.lowerBound]!.indexPath.section
-        let lastVisibleSection = cells[cellRange.upperBound]!.indexPath.section
-        let visibleSections = (firstVisibleSection...lastVisibleSection).map { $0 }
-        let headers = self.layoutAfterUpdate!.stickyController.layoutAttributes(in: rect, visibleSections: visibleSections)
-//        let headers = (firstVisibleSection...lastVisibleSection)
-//            .compactMap { self.layoutAttributesForSupplementaryView(ofKind: UICollectionView.elementKindSectionHeader, at: IndexPath(item: 0, section: $0))}
-//            .filter { $0.frame.intersects(rect) }
-        results.append(contentsOf: headers)
+//        let firstVisibleSection = cells[cellRange.lowerBound]!.indexPath.section
+//        let lastVisibleSection = cells[cellRange.upperBound]!.indexPath.section
+//        let visibleSections = (firstVisibleSection...lastVisibleSection).map { $0 }
+//        let headers = self.layoutAfterUpdate!.stickyController.layoutAttributes(in: rect, visibleSections: visibleSections)
+////        let headers = (firstVisibleSection...lastVisibleSection)
+////            .compactMap { self.layoutAttributesForSupplementaryView(ofKind: UICollectionView.elementKindSectionHeader, at: IndexPath(item: 0, section: $0))}
+////            .filter { $0.frame.intersects(rect) }
+//        results.append(contentsOf: headers)
         
-        return results
+       return results
     }
     
     // MARK: Layout Attributes
