@@ -28,9 +28,6 @@ public protocol LayoutModel {
     func layoutAttributes(forAdditionalSupplementaryViewOfKind elementKind: String, at indexPath: IndexPath) -> LayoutAttributes?
     func initialLayoutAttributes(forInsertedSupplementaryViewOfKind elementKind: String, at indexPath: IndexPath) -> LayoutAttributes?
     func finalLayoutAttributes(forDeletedSupplementaryViewOfKind elementKind: String, at indexPath: IndexPath) -> LayoutAttributes?
-//    func layoutAttributes(forAdditionalSupplementaryViewAt indexPath: IndexPath, with elementKind: String) -> LayoutAttributes?
-//    func initialLayoutAttributes(forInsertedSupplementaryViewAt indexPath: IndexPath, with elementKind: String) -> LayoutAttributes?
-//    func finalLayoutAttributes(forDeletedSupplementaryViewAt indexPath: IndexPath, with elementKind: String) -> LayoutAttributes?
 }
 
 public extension LayoutModel {

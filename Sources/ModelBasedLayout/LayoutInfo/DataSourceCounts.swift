@@ -17,6 +17,7 @@ public struct DataSourceCounts {
         let section: Int
         let itemCount: Int
         let firstItemIndex: Int
+        
         var lastItemIndex: Int {
             firstItemIndex + itemCount - 1
         }
@@ -111,4 +112,19 @@ public struct DataSourceCounts {
         
         return result
     }
+}
+
+
+extension DataSourceCounts: Equatable {
+    public static func == (lhs: DataSourceCounts, rhs: DataSourceCounts) -> Bool {
+        guard lhs.itemsCount == rhs.itemsCount && lhs.sections.count == rhs.sections.count else { return false }
+        
+        for i in 0..<lhs.sections.count {
+            guard lhs.sections[i].itemCount == rhs.sections[i].itemCount else { return false }
+        }
+        
+        return true
+    }
+    
+    
 }

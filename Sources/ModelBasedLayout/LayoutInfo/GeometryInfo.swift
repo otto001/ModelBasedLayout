@@ -8,7 +8,7 @@
 import UIKit
 
 
-public struct GeometryInfo {
+public struct GeometryInfo: Equatable {
     
     public var viewSize: CGSize
     public var adjustedContentInset: UIEdgeInsets

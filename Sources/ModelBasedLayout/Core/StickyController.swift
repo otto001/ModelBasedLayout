@@ -21,7 +21,7 @@ class StickyController {
     private var visibleBounds: CGRect = .zero
     
     private var visibleBoundsValid: Bool = false
-    private var frozen: Bool = false
+    private(set) var frozen: Bool = false
     
     init(stickyEdges: Edges,
          dataSourceCounts: DataSourceCounts,
@@ -53,19 +53,21 @@ class StickyController {
         self.visibleBoundsValid = false
     }
     
-    func freezeLayoutAttributes() {
+    private func freezeLayoutAttributes() {
         self.frozen = true
     }
     
-    func unfreezeLayoutAttributes() {
-        self.frozen = false
-    }
-    
     private func updateVisibleBoundsIfNeeded() {
-        // TODO: Check if we can freeze automatically when detecting a size change
         guard !self.visibleBoundsValid && !self.frozen else { return }
         
-        self.bounds = self.boundsProvider()
+        let newBounds = self.boundsProvider()
+        
+        guard newBounds.size == self.bounds.size || self.bounds.size == .zero else {
+            self.freezeLayoutAttributes()
+            return
+        }
+        
+        self.bounds = newBounds
         self.visibleBounds = CGRect(x: self.bounds.minX + self.safeAreaInsets.left,
                            y: self.bounds.minY + self.safeAreaInsets.top,
                            width: self.bounds.width - self.safeAreaInsets.left - self.safeAreaInsets.right,

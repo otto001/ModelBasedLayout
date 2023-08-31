@@ -63,7 +63,8 @@ class LayoutController<ModelType: LayoutModel> {
             self.container.pushNewLayout()
         }
         
-        self.stickyController(.afterUpdate)?.unfreezeLayoutAttributes()
+        assert(self.stickyController(.afterUpdate)?.frozen != true)
+        //self.stickyController(.afterUpdate)?.unfreezeLayoutAttributes()
         
         self.prepareActions = []
     }
@@ -133,12 +134,8 @@ class LayoutController<ModelType: LayoutModel> {
                                                                               geometryAfter: newLayout.geometryInfo,
                                                                               contentOffset: boundsProvider().origin).cgPoint
             
-            
-            self.stickyController(.afterUpdate)?.freezeLayoutAttributes()
         }
         
-        
-        // This block MUST happen after the sticky controller has been frozen in case of a size change (remove if the sticky contoller is able to freeze on its own)
         if self.usesStickyViews(), let stickyController = self.stickyController(.afterUpdate) {
             let rect = boundsProvider().union(newBounds)
             let invalidation = stickyController.indexPathsToInvalidate(in: rect)

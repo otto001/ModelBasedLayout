@@ -25,6 +25,8 @@ class LayoutContainer<ModelType: LayoutModel> {
     private var layoutAfterUpdate: Layout?
     private var layoutBeforeUpdate: Layout?
     
+    private var cachedLayout: Layout?
+    
     init(modelProvider: @escaping (_: DataSourceCounts, _: GeometryInfo) -> ModelType,
          dataSourceCountsProvider: @escaping () -> DataSourceCounts,
          geometryInfoProvider: @escaping () -> GeometryInfo,
@@ -49,6 +51,7 @@ class LayoutContainer<ModelType: LayoutModel> {
     func pushNewLayout() {
         self.layoutBeforeUpdate = self.layoutAfterUpdate
         self.layoutAfterUpdate = self.makeNewLayout()
+        self.cachedLayout = nil
     }
     
     func makeNewLayout(forNewBounds newBounds: CGRect? = nil) -> Layout {
@@ -59,6 +62,14 @@ class LayoutContainer<ModelType: LayoutModel> {
             geometryInfo.viewSize = newBounds.size
         }
         
+        if let cachedLayout = self.cachedLayout,
+           cachedLayout.geometryInfo == geometryInfo,
+           cachedLayout.dataSourceCounts == dataSourceCounts {
+            // We need to make sure to invalidate the stickyControllers cached bounds since they may be outdated
+            cachedLayout.stickyController.invalidateVisibleBounds()
+            return cachedLayout
+        }
+        
         let model = modelProvider(dataSourceCounts, geometryInfo)
         let stickyController = StickyController(stickyEdges: model.pinSectionHeadersToEdges,
                                                 dataSourceCounts: dataSourceCounts,
@@ -67,7 +78,9 @@ class LayoutContainer<ModelType: LayoutModel> {
             model.layoutAttributes(forHeaderOfSection: section)
         }
         
-        return Layout(geometryInfo: geometryInfo, dataSourceCounts: dataSourceCounts, stickyController: stickyController, model: model)
+        self.cachedLayout = Layout(geometryInfo: geometryInfo, dataSourceCounts: dataSourceCounts, stickyController: stickyController, model: model)
+        
+        return self.cachedLayout!
     }
     
     func clearLayoutBefore() {
