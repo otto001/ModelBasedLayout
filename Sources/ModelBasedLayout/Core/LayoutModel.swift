@@ -13,7 +13,7 @@ public protocol LayoutModel {
     var contentSize: CGSize { get }
     
     func transitionAnimation(forItemAt indexPath: IndexPath) -> TransitionAnimation
-    func transitionAnimation(forSupplementaryViewAt indexPath: IndexPath, with elementKind: String) -> TransitionAnimation
+    func transitionAnimation(forSupplementaryViewOfKind elementKind: String, at indexPath: IndexPath) -> TransitionAnimation
     
     func items(in rect: CGRect) -> [Item]?
     
@@ -24,9 +24,13 @@ public protocol LayoutModel {
     func layoutAttributes(forHeaderOfSection section: Int) -> LayoutAttributes?
     var pinSectionHeadersToEdges: Edges { get }
     
-    func layoutAttributes(forAdditionalSupplementaryViewAt indexPath: IndexPath, with elementKind: String) -> LayoutAttributes?
-    func initialLayoutAttributes(forInsertedSupplementaryViewAt indexPath: IndexPath, with elementKind: String) -> LayoutAttributes?
-    func finalLayoutAttributes(forDeletedSupplementaryViewAt indexPath: IndexPath, with elementKind: String) -> LayoutAttributes?
+    
+    func layoutAttributes(forAdditionalSupplementaryViewOfKind elementKind: String, at indexPath: IndexPath) -> LayoutAttributes?
+    func initialLayoutAttributes(forInsertedSupplementaryViewOfKind elementKind: String, at indexPath: IndexPath) -> LayoutAttributes?
+    func finalLayoutAttributes(forDeletedSupplementaryViewOfKind elementKind: String, at indexPath: IndexPath) -> LayoutAttributes?
+//    func layoutAttributes(forAdditionalSupplementaryViewAt indexPath: IndexPath, with elementKind: String) -> LayoutAttributes?
+//    func initialLayoutAttributes(forInsertedSupplementaryViewAt indexPath: IndexPath, with elementKind: String) -> LayoutAttributes?
+//    func finalLayoutAttributes(forDeletedSupplementaryViewAt indexPath: IndexPath, with elementKind: String) -> LayoutAttributes?
 }
 
 public extension LayoutModel {
@@ -35,7 +39,7 @@ public extension LayoutModel {
         return .opacity
     }
     
-    func transitionAnimation(forSupplementaryViewAt indexPath: IndexPath, with elementKind: String) -> TransitionAnimation {
+    func transitionAnimation(forSupplementaryViewOfKind elementKind: String, at indexPath: IndexPath) -> TransitionAnimation {
         return .opacity
     }
     
@@ -44,11 +48,11 @@ public extension LayoutModel {
     }
     
     func initialLayoutAttributes(forInsertedItemAt indexPath: IndexPath) -> LayoutAttributes? {
-        return layoutAttributes(forItemAt: indexPath)
+        return nil
     }
     
     func finalLayoutAttributes(forDeletedItemAt indexPath: IndexPath) -> LayoutAttributes? {
-        return layoutAttributes(forItemAt: indexPath)
+        return nil
     }
     
     func layoutAttributes(forHeaderOfSection section: Int) -> LayoutAttributes? {
@@ -57,27 +61,15 @@ public extension LayoutModel {
     
     var pinSectionHeadersToEdges: Edges { [] }
     
-    func initialLayoutAttributes(forInsertedSupplementaryViewAt indexPath: IndexPath, with elementKind: String) -> LayoutAttributes? {
-        return layoutAttributes(forSupplementaryViewAt: indexPath, with: elementKind)
-    }
-    
-    func layoutAttributes(forAdditionalSupplementaryViewAt indexPath: IndexPath, with elementKind: String) -> LayoutAttributes? {
+    func layoutAttributes(forAdditionalSupplementaryViewOfKind elementKind: String, at indexPath: IndexPath) -> LayoutAttributes? {
         return nil
     }
     
-    func finalLayoutAttributes(forDeletedSupplementaryViewAt indexPath: IndexPath, with elementKind: String) -> LayoutAttributes? {
-        return layoutAttributes(forSupplementaryViewAt: indexPath, with: elementKind)
+    func initialLayoutAttributes(forInsertedSupplementaryViewOfKind elementKind: String, at indexPath: IndexPath) -> LayoutAttributes? {
+        return nil
     }
-}
-
-
-internal extension LayoutModel {
-    func layoutAttributes(forSupplementaryViewAt indexPath: IndexPath, with elementKind: String) -> LayoutAttributes? {
-        switch elementKind {
-        case UICollectionView.elementKindSectionHeader:
-            return self.layoutAttributes(forHeaderOfSection: indexPath.section)
-        default:
-            return self.layoutAttributes(forSupplementaryViewAt: indexPath, with: elementKind)
-        }
+    
+    func finalLayoutAttributes(forDeletedSupplementaryViewOfKind elementKind: String, at indexPath: IndexPath) -> LayoutAttributes? {
+        return nil
     }
 }

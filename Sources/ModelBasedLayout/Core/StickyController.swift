@@ -40,7 +40,7 @@ class StickyController {
         self.buildCachedLayoutAttributes(dataSourceCounts: dataSourceCounts)
     }
     
-    func buildCachedLayoutAttributes(dataSourceCounts: DataSourceCounts) {
+    private func buildCachedLayoutAttributes(dataSourceCounts: DataSourceCounts) {
         guard self.stickyEdges != .none else { return }
         
         
@@ -94,7 +94,6 @@ class StickyController {
     }
     
 
-    
     func layoutAttributes(in rect: CGRect, visibleSections: [Int]) -> [LayoutAttributes] {
         self.updateVisibleBoundsIfNeeded()
         guard self.stickyEdges != .none else {

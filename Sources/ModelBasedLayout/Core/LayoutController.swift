@@ -230,9 +230,7 @@ class LayoutController<ModelType: LayoutModel> {
         let lastVisibleSection = cells[cellRange.upperBound]!.indexPath.section
         let visibleSections = (firstVisibleSection...lastVisibleSection).map { $0 }
         let headers = self.layoutAfterUpdate!.stickyController.layoutAttributes(in: rect, visibleSections: visibleSections)
-//        let headers = (firstVisibleSection...lastVisibleSection)
-//            .compactMap { self.layoutAttributesForSupplementaryView(ofKind: UICollectionView.elementKindSectionHeader, at: IndexPath(item: 0, section: $0))}
-//            .filter { $0.frame.intersects(rect) }
+
         results.append(contentsOf: headers)
         
        return results
@@ -297,14 +295,16 @@ class LayoutController<ModelType: LayoutModel> {
     
     // MARK: Supplementary Views
     
-    private func layoutAttributes(forSupplementaryViewOfKind elementKind: String, at indexPath: IndexPath, state: UpdateState) -> LayoutAttributes? {
+    private func layoutAttributes(forSupplementaryViewOfKind elementKind: String,
+                                  at indexPath: IndexPath,
+                                  state: UpdateState) -> LayoutAttributes? {
         let layout = state == .afterUpdate ? layoutAfterUpdate : layoutBeforeUpdate
         
         switch elementKind {
         case UICollectionView.elementKindSectionHeader:
             return layout?.stickyController.layoutAttributes(for: indexPath.section)
         default:
-            return layout?.model.layoutAttributes(forSupplementaryViewAt: indexPath, with: elementKind)
+            return layout?.model.layoutAttributes(forAdditionalSupplementaryViewOfKind: elementKind, at: indexPath)
         }
         
     }
@@ -330,21 +330,11 @@ class LayoutController<ModelType: LayoutModel> {
 //            }
 //        }
         
-        switch elementKind {
-        case UICollectionView.elementKindSectionHeader:
-            let attrs = self.layoutBeforeUpdate?.stickyController.layoutAttributes(for: indexPath.section)
-            return attrs
-        default:
-            return self.layoutAttributes(forSupplementaryViewOfKind: elementKind, at: indexPath, state: .beforeUpdate)
-        }
-        
-
+        return self.layoutAttributes(forSupplementaryViewOfKind: elementKind, at: indexPath, state: .beforeUpdate)
     }
     
     func layoutAttributesForSupplementaryView(ofKind elementKind: String, at indexPath: IndexPath) -> LayoutAttributes? {
-        var attrs = self.layoutAttributes(forSupplementaryViewOfKind: elementKind, at: indexPath, state: .afterUpdate)
-        //attrs?.transform = .init(scaleX: 10, y: 1)
-        return attrs
+        return self.layoutAttributes(forSupplementaryViewOfKind: elementKind, at: indexPath, state: .afterUpdate)
     }
     
     func finalLayoutAttributesForDisappearingSupplementaryElement(ofKind elementKind: String, at indexPath: IndexPath) -> LayoutAttributes? {
@@ -368,8 +358,6 @@ class LayoutController<ModelType: LayoutModel> {
 //            }
 //        }
         
-        var attrs = self.layoutAttributes(forSupplementaryViewOfKind: elementKind, at: indexPath, state: .afterUpdate)
-        //attrs?.transform = .init(scaleX: 10, y: 1)
-        return attrs
+        return self.layoutAttributes(forSupplementaryViewOfKind: elementKind, at: indexPath, state: .afterUpdate)
     }
 }
