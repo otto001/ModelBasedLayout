@@ -33,12 +33,13 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
             DataSourceCounts(collectionView: self.collectionView!)
         } geometryInfo: {
             GeometryInfo(collectionView: self.collectionView!)
-        } visibleBoundsProvider: { [weak self] in
+        } boundsProvider: { [weak self] in
             guard let collectionView = self?.collectionView else { return .zero }
-            return CGRect(x: collectionView.bounds.minX + collectionView.safeAreaInsets.left,
-                   y: collectionView.bounds.minY + collectionView.safeAreaInsets.top,
-                   width: collectionView.frame.width - collectionView.safeAreaInsets.left - collectionView.safeAreaInsets.right,
-                   height: collectionView.frame.height - collectionView.safeAreaInsets.top - collectionView.safeAreaInsets.bottom)
+            return collectionView.bounds
+//            return CGRect(x: collectionView.bounds.minX + collectionView.safeAreaInsets.left,
+//                   y: collectionView.bounds.minY + collectionView.safeAreaInsets.top,
+//                   width: collectionView.frame.width - collectionView.safeAreaInsets.left - collectionView.safeAreaInsets.right,
+//                   height: collectionView.frame.height - collectionView.safeAreaInsets.top - collectionView.safeAreaInsets.bottom)
         }
     }
     

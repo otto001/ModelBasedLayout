@@ -33,16 +33,16 @@ class LayoutController<ModelType: LayoutModel> {
     private(set) var modelProvider: (_ dataSourceCounts: DataSourceCounts, _ geometryInfo: GeometryInfo) -> ModelType
     private(set) var dataSourceCountsProvider: () -> DataSourceCounts
     private(set) var geometryInfoProvider: () -> GeometryInfo
-    private(set) var visibleBoundsProvider: () -> CGRect
+    private(set) var boundsProvider: () -> CGRect
     
     init(_ model: @escaping (_ dataSourceCounts: DataSourceCounts, _ geometryInfo: GeometryInfo) -> ModelType,
          dataSourceCounts: @escaping () -> DataSourceCounts,
          geometryInfo: @escaping () -> GeometryInfo,
-         visibleBoundsProvider: @escaping () -> CGRect) {
+         boundsProvider: @escaping () -> CGRect) {
         self.modelProvider = model
         self.dataSourceCountsProvider = dataSourceCounts
         self.geometryInfoProvider = geometryInfo
-        self.visibleBoundsProvider = visibleBoundsProvider
+        self.boundsProvider = boundsProvider
     }
     
     func layoutModel(_ state: UpdateState) -> ModelType? {
@@ -79,7 +79,8 @@ class LayoutController<ModelType: LayoutModel> {
         let model = modelProvider(dataSourceCounts, geometryInfo)
         let stickyController = StickyController(stickyEdges: model.pinSectionHeadersToEdges,
                                                 dataSourceCounts: dataSourceCounts,
-                                                visibleBoundsProvider: self.visibleBoundsProvider) { section in
+                                                geometryInfo: geometryInfo,
+                                                boundsProvider: self.boundsProvider) { section in
             model.layoutAttributes(forHeaderOfSection: section)
         }
         
@@ -108,6 +109,8 @@ class LayoutController<ModelType: LayoutModel> {
             self.layoutBeforeUpdate = self.layoutAfterUpdate
             self.layoutAfterUpdate = self.makeNewLayout()
         }
+        
+        self.layoutAfterUpdate?.stickyController.unfreezeLayoutAttributes()
         
         self.prepareActions = []
     }
@@ -177,10 +180,13 @@ class LayoutController<ModelType: LayoutModel> {
                                                                               contentSizeAfter: newLayout.model.contentSize,
                                                                               geometryAfter: geometryAfter,
                                                                               contentOffset: contentOffset).cgPoint
+            
+            
+            self.layoutAfterUpdate?.stickyController.freezeLayoutAttributes()
         }
         
         if self.usesStickyViews(), let stickyController = self.layoutAfterUpdate?.stickyController {
-            let rect = visibleBoundsProvider().union(newBounds)
+            let rect = boundsProvider().union(newBounds)
             let invalidation = stickyController.indexPathsToInvalidate(in: rect)
             context.invalidateSupplementaryElements(ofKind: UICollectionView.elementKindSectionHeader, at: invalidation)
         }
@@ -190,6 +196,8 @@ class LayoutController<ModelType: LayoutModel> {
         if context.invalidateDataSourceCounts || context.invalidateEverything || context.contentSizeAdjustment != .zero  || context.contentOffsetAdjustment != .zero  {
             self.needsToReplaceModel()
         }
+        
+        self.layoutAfterUpdate?.stickyController.invalidateVisibleBounds()
     }
     
     // MARK: Rect
@@ -218,14 +226,14 @@ class LayoutController<ModelType: LayoutModel> {
         var results = Array(cells[cellRange].compactMap {$0})
         
         
-//        let firstVisibleSection = cells[cellRange.lowerBound]!.indexPath.section
-//        let lastVisibleSection = cells[cellRange.upperBound]!.indexPath.section
-//        let visibleSections = (firstVisibleSection...lastVisibleSection).map { $0 }
-//        let headers = self.layoutAfterUpdate!.stickyController.layoutAttributes(in: rect, visibleSections: visibleSections)
-////        let headers = (firstVisibleSection...lastVisibleSection)
-////            .compactMap { self.layoutAttributesForSupplementaryView(ofKind: UICollectionView.elementKindSectionHeader, at: IndexPath(item: 0, section: $0))}
-////            .filter { $0.frame.intersects(rect) }
-//        results.append(contentsOf: headers)
+        let firstVisibleSection = cells[cellRange.lowerBound]!.indexPath.section
+        let lastVisibleSection = cells[cellRange.upperBound]!.indexPath.section
+        let visibleSections = (firstVisibleSection...lastVisibleSection).map { $0 }
+        let headers = self.layoutAfterUpdate!.stickyController.layoutAttributes(in: rect, visibleSections: visibleSections)
+//        let headers = (firstVisibleSection...lastVisibleSection)
+//            .compactMap { self.layoutAttributesForSupplementaryView(ofKind: UICollectionView.elementKindSectionHeader, at: IndexPath(item: 0, section: $0))}
+//            .filter { $0.frame.intersects(rect) }
+        results.append(contentsOf: headers)
         
        return results
     }
@@ -322,12 +330,20 @@ class LayoutController<ModelType: LayoutModel> {
 //            }
 //        }
         
-        let attrs = self.layoutAttributes(forSupplementaryViewOfKind: elementKind, at: indexPath, state: .beforeUpdate)
-        return attrs
+        switch elementKind {
+        case UICollectionView.elementKindSectionHeader:
+            let attrs = self.layoutBeforeUpdate?.stickyController.layoutAttributes(for: indexPath.section)
+            return attrs
+        default:
+            return self.layoutAttributes(forSupplementaryViewOfKind: elementKind, at: indexPath, state: .beforeUpdate)
+        }
+        
+
     }
     
     func layoutAttributesForSupplementaryView(ofKind elementKind: String, at indexPath: IndexPath) -> LayoutAttributes? {
-        let attrs = self.layoutAttributes(forSupplementaryViewOfKind: elementKind, at: indexPath, state: .afterUpdate)
+        var attrs = self.layoutAttributes(forSupplementaryViewOfKind: elementKind, at: indexPath, state: .afterUpdate)
+        //attrs?.transform = .init(scaleX: 10, y: 1)
         return attrs
     }
     
@@ -352,7 +368,8 @@ class LayoutController<ModelType: LayoutModel> {
 //            }
 //        }
         
-        let attrs = self.layoutAttributes(forSupplementaryViewOfKind: elementKind, at: indexPath, state: .afterUpdate)
+        var attrs = self.layoutAttributes(forSupplementaryViewOfKind: elementKind, at: indexPath, state: .afterUpdate)
+        //attrs?.transform = .init(scaleX: 10, y: 1)
         return attrs
     }
 }

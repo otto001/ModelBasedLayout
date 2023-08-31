@@ -25,7 +25,15 @@ public struct LayoutAttributes {
     public var isHidden: Bool
     
     public var transform: CGAffineTransform
-    public var transform3D: CATransform3D
+//    {
+//        get {
+//
+//        }
+//        set {
+//
+//        }
+//    }
+    //public var transform3D: CATransform3D
     
 //    public var stickyEdges: Edges {
 //        didSet {
@@ -55,7 +63,7 @@ public struct LayoutAttributes {
     public init(forCellAt indexPath: IndexPath,
          frame: CGRect = .zero, zIndex: Int = 0,
          alpha: CGFloat = 1, isHidden: Bool = false,
-         transform: CGAffineTransform = .identity, transform3D: CATransform3D = .identity) {
+         transform: CGAffineTransform = .identity) {
         self.indexPath = indexPath
         self.elementCategory = .cell
         self.elementKind = nil
@@ -64,15 +72,14 @@ public struct LayoutAttributes {
         self.alpha = alpha
         self.isHidden = isHidden
         self.transform = transform
-        self.transform3D = transform3D
+        //self.transform3D = transform3D
        // self.stickyEdges = .none
     }
     
     public init(forSupplementaryViewAt indexPath: IndexPath, elementKind: String?,
          frame: CGRect = .zero, zIndex: Int = 0,
          alpha: CGFloat = 1, isHidden: Bool = false,
-         transform: CGAffineTransform = .identity, transform3D: CATransform3D = .identity,
-         stickyEdges: Edges = .none) {
+         transform: CGAffineTransform = .identity) {
         self.indexPath = indexPath
         self.elementCategory = .supplementaryView
         self.elementKind = elementKind
@@ -81,14 +88,14 @@ public struct LayoutAttributes {
         self.alpha = alpha
         self.isHidden = isHidden
         self.transform = transform
-        self.transform3D = transform3D
+        //self.transform3D = transform3D
         //self.stickyEdges = stickyEdges
     }
     
     public init(forDecorativeViewAt indexPath: IndexPath, elementKind: String?,
          frame: CGRect = .zero, zIndex: Int = 0,
          alpha: CGFloat = 1, isHidden: Bool = false,
-         transform: CGAffineTransform = .identity, transform3D: CATransform3D = .identity) {
+         transform: CGAffineTransform = .identity) {
         self.indexPath = indexPath
         self.elementCategory = .decorationView
         self.elementKind = elementKind
@@ -97,7 +104,7 @@ public struct LayoutAttributes {
         self.alpha = alpha
         self.isHidden = isHidden
         self.transform = transform
-        self.transform3D = transform3D
+        //self.transform3D = transform3D
         //self.stickyEdges = .none
     }
     
@@ -114,7 +121,7 @@ public struct LayoutAttributes {
         self.isHidden = collectionViewLayoutAttributes.isHidden
 
         self.transform = collectionViewLayoutAttributes.transform
-        self.transform3D = collectionViewLayoutAttributes.transform3D
+        //self.transform3D = collectionViewLayoutAttributes.transform3D
     }
     
     public func forLayout() -> UICollectionViewLayoutAttributes {
@@ -138,7 +145,7 @@ public struct LayoutAttributes {
         collectionViewLayoutAttributes.isHidden = self.isHidden
         
         collectionViewLayoutAttributes.transform = self.transform
-        collectionViewLayoutAttributes.transform3D = self.transform3D
+        //collectionViewLayoutAttributes.transform3D = self.transform3D
         
         return collectionViewLayoutAttributes
     }

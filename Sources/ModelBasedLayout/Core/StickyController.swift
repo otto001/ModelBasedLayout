@@ -11,17 +11,31 @@ class StickyController {
     
     let stickyEdges: Edges
 
-    private var visibleBoundsProvider: () -> CGRect
+    private var boundsProvider: () -> CGRect
     private var layoutAttributesProvider: (_ section: Int) -> LayoutAttributes?
     
     private var cachedAttributes: [Int: LayoutAttributes] = [:]
     
-    init(stickyEdges: Edges, dataSourceCounts: DataSourceCounts, visibleBoundsProvider: @escaping () -> CGRect, layoutAttributesProvider: @escaping (_: Int) -> LayoutAttributes?) {
+    private var bounds: CGRect = .zero
+    private var safeAreaInsets: UIEdgeInsets
+    private var visibleBounds: CGRect = .zero
+    
+    private var visibleBoundsValid: Bool = false
+    private var frozen: Bool = false
+    
+    init(stickyEdges: Edges,
+         dataSourceCounts: DataSourceCounts,
+         geometryInfo: GeometryInfo,
+         boundsProvider: @escaping () -> CGRect,
+         layoutAttributesProvider: @escaping (_: Int) -> LayoutAttributes?) {
         
         self.stickyEdges = stickyEdges
         
-        self.visibleBoundsProvider = visibleBoundsProvider
+        self.boundsProvider = boundsProvider
         self.layoutAttributesProvider = layoutAttributesProvider
+        
+        self.safeAreaInsets = geometryInfo.safeAreaInsets
+        self.updateVisibleBoundsIfNeeded()
         
         self.buildCachedLayoutAttributes(dataSourceCounts: dataSourceCounts)
     }
@@ -35,23 +49,45 @@ class StickyController {
         }
     }
     
+    func invalidateVisibleBounds() {
+        self.visibleBoundsValid = false
+    }
+    
+    func freezeLayoutAttributes() {
+        self.frozen = true
+    }
+    
+    func unfreezeLayoutAttributes() {
+        self.frozen = false
+    }
+    
+    private func updateVisibleBoundsIfNeeded() {
+        guard !self.visibleBoundsValid && !self.frozen else { return }
+        
+        self.bounds = self.boundsProvider()
+        self.visibleBounds = CGRect(x: self.bounds.minX + self.safeAreaInsets.left,
+                           y: self.bounds.minY + self.safeAreaInsets.top,
+                           width: self.bounds.width - self.safeAreaInsets.left - self.safeAreaInsets.right,
+                           height: self.bounds.height - self.safeAreaInsets.top - self.safeAreaInsets.bottom)
+        self.visibleBoundsValid = true
+    }
+    
     private func stickify(_ attrs: LayoutAttributes) -> LayoutAttributes {
         guard self.stickyEdges != .none else { return attrs }
-        let visibleBounds = self.visibleBoundsProvider()
         
         var newAttrs = attrs
         
-        if self.stickyEdges.contains(.left) && attrs.frame.minX < visibleBounds.minX {
-            newAttrs.frame.origin.x = visibleBounds.origin.x
+        if self.stickyEdges.contains(.left) && attrs.frame.minX < self.visibleBounds.minX {
+            newAttrs.frame.origin.x = self.visibleBounds.origin.x
         }
-        if self.stickyEdges.contains(.top) && attrs.frame.minY < visibleBounds.minY {
-            newAttrs.frame.origin.y = visibleBounds.origin.y
+        if self.stickyEdges.contains(.top) && attrs.frame.minY < self.visibleBounds.minY {
+            newAttrs.frame.origin.y = self.visibleBounds.origin.y
         }
-        if self.stickyEdges.contains(.right) && attrs.frame.maxX > visibleBounds.maxX {
-            newAttrs.frame.origin.x = visibleBounds.maxX - newAttrs.frame.width
+        if self.stickyEdges.contains(.right) && attrs.frame.maxX > self.visibleBounds.maxX {
+            newAttrs.frame.origin.x = self.visibleBounds.maxX - newAttrs.frame.width
         }
-        if self.stickyEdges.contains(.bottom) && attrs.frame.maxY > visibleBounds.maxY {
-            newAttrs.frame.origin.y = visibleBounds.maxY - newAttrs.frame.height
+        if self.stickyEdges.contains(.bottom) && attrs.frame.maxY > self.visibleBounds.maxY {
+            newAttrs.frame.origin.y = self.visibleBounds.maxY - newAttrs.frame.height
         }
         
         return newAttrs
@@ -60,6 +96,7 @@ class StickyController {
 
     
     func layoutAttributes(in rect: CGRect, visibleSections: [Int]) -> [LayoutAttributes] {
+        self.updateVisibleBoundsIfNeeded()
         guard self.stickyEdges != .none else {
             return visibleSections.compactMap { layoutAttributesProvider($0) }.filter { $0.frame.intersects(rect) }
         }
@@ -68,6 +105,7 @@ class StickyController {
     }
     
     func layoutAttributes(for section: Int) -> LayoutAttributes? {
+        self.updateVisibleBoundsIfNeeded()
         guard self.stickyEdges != .none else {
             return layoutAttributesProvider(section)
         }
@@ -76,8 +114,10 @@ class StickyController {
     }
     
     func indexPathsToInvalidate(in rect: CGRect) -> [IndexPath] {
+        self.updateVisibleBoundsIfNeeded()
         guard self.stickyEdges != .none else { return [] }
         
-        return self.layoutAttributes(in: rect, visibleSections: []).map { $0.indexPath }
+        let result = self.layoutAttributes(in: rect, visibleSections: []).map { $0.indexPath }
+        return result
     }
 }
