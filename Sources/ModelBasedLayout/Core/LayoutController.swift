@@ -9,108 +9,61 @@ import UIKit
 
 
 class LayoutController<ModelType: LayoutModel> {
-    enum UpdateState {
-        case beforeUpdate, afterUpdate
-    }
+
+    private let container: LayoutContainer<ModelType>
     
     private var prepareActions: PrepareActions = []
     private var dataChange: DataBatchUpdate? = nil
     
-    private var stickyControllers: [String: StickyController] = [:]
     private var lastInvalidatedBounds: CGRect? = nil
     
-    // MARK: Layout Model & Data
-    struct Layout {
-        let geometryInfo: GeometryInfo
-        let dataSourceCounts: DataSourceCounts
-        let stickyController: StickyController
-        var model: ModelType
-    }
-    
-    private var layoutAfterUpdate: Layout?
-    private var layoutBeforeUpdate: Layout?
-    
-    private(set) var modelProvider: (_ dataSourceCounts: DataSourceCounts, _ geometryInfo: GeometryInfo) -> ModelType
-    private(set) var dataSourceCountsProvider: () -> DataSourceCounts
-    private(set) var geometryInfoProvider: () -> GeometryInfo
+
     private(set) var boundsProvider: () -> CGRect
     
     init(_ model: @escaping (_ dataSourceCounts: DataSourceCounts, _ geometryInfo: GeometryInfo) -> ModelType,
          dataSourceCounts: @escaping () -> DataSourceCounts,
          geometryInfo: @escaping () -> GeometryInfo,
          boundsProvider: @escaping () -> CGRect) {
-        self.modelProvider = model
-        self.dataSourceCountsProvider = dataSourceCounts
-        self.geometryInfoProvider = geometryInfo
+        
+        self.container = .init(modelProvider: model, dataSourceCountsProvider: dataSourceCounts, geometryInfoProvider: geometryInfo, boundsProvider: boundsProvider)
+
         self.boundsProvider = boundsProvider
     }
     
-    func layoutModel(_ state: UpdateState) -> ModelType? {
-        switch state {
-        case .beforeUpdate:
-            return layoutBeforeUpdate?.model
-        case .afterUpdate:
-            return layoutAfterUpdate?.model
-        }
+    private func layoutModel(_ state: LayoutState) -> ModelType? {
+        self.container.layout(state)?.model
     }
     
-    func dataSourceCounts(_ state: UpdateState) -> DataSourceCounts? {
-        switch state {
-        case .beforeUpdate:
-            return layoutBeforeUpdate?.dataSourceCounts
-        case .afterUpdate:
-            return layoutAfterUpdate?.dataSourceCounts
-        }
+    private func dataSourceCounts(_ state: LayoutState) -> DataSourceCounts? {
+        self.container.layout(state)?.dataSourceCounts
     }
     
-    func geometryInfo(_ state: UpdateState) -> GeometryInfo? {
-        switch state {
-        case .beforeUpdate:
-            return layoutBeforeUpdate?.geometryInfo
-        case .afterUpdate:
-            return layoutAfterUpdate?.geometryInfo
-        }
+    private func geometryInfo(_ state: LayoutState) -> GeometryInfo? {
+        self.container.layout(state)?.geometryInfo
     }
     
-    func makeNewLayout(dataSourceCounts: DataSourceCounts? = nil, geometryInfo: GeometryInfo? = nil) -> Layout {
-        let dataSourceCounts = dataSourceCounts ?? dataSourceCountsProvider()
-        let geometryInfo = geometryInfo ?? geometryInfoProvider()
-        
-        let model = modelProvider(dataSourceCounts, geometryInfo)
-        let stickyController = StickyController(stickyEdges: model.pinSectionHeadersToEdges,
-                                                dataSourceCounts: dataSourceCounts,
-                                                geometryInfo: geometryInfo,
-                                                boundsProvider: self.boundsProvider) { section in
-            model.layoutAttributes(forHeaderOfSection: section)
-        }
-        
-        return Layout(geometryInfo: geometryInfo, dataSourceCounts: dataSourceCounts, stickyController: stickyController, model: model)
+    private func stickyController(_ state: LayoutState) -> StickyController? {
+        self.container.layout(state)?.stickyController
     }
-    
+
     func needsToReplaceModel() {
         self.prepareActions.insert(.replaceModel)
     }
     
-//    private func stickyController(for elementKind: String) -> StickyController {
-//        if let stickyController = self.stickyControllers[elementKind] {
-//            return stickyController
-//        }
-//
-//        self.stickyControllers[elementKind] = StickyController()
-//
-//        return self.stickyControllers[elementKind]!
-//    }
+    var collectionViewContentSize: CGSize {
+        if let model = self.layoutModel(.afterUpdate) {
+            return model.contentSize
+        }
+        return .zero
+    }
     
     // MARK: Prepare
     func prepare() {
-        if self.layoutModel(.afterUpdate) == nil {
-            self.layoutAfterUpdate = self.makeNewLayout()
-        } else if prepareActions.contains(.replaceModel) {
-            self.layoutBeforeUpdate = self.layoutAfterUpdate
-            self.layoutAfterUpdate = self.makeNewLayout()
+        if self.layoutModel(.afterUpdate) == nil || prepareActions.contains(.replaceModel) {
+            self.container.pushNewLayout()
         }
         
-        self.layoutAfterUpdate?.stickyController.unfreezeLayoutAttributes()
+        self.stickyController(.afterUpdate)?.unfreezeLayoutAttributes()
         
         self.prepareActions = []
     }
@@ -120,7 +73,7 @@ class LayoutController<ModelType: LayoutModel> {
     }
     
     func finalize() {
-        self.layoutBeforeUpdate = nil
+        self.container.clearLayoutBefore()
         self.dataChange = nil
     }
     
@@ -147,7 +100,7 @@ class LayoutController<ModelType: LayoutModel> {
     }
     
     private func usesStickyViews() -> Bool {
-        (self.layoutAfterUpdate?.stickyController.stickyEdges ?? .none) != .none
+        (self.stickyController(.afterUpdate)?.stickyEdges ?? .none) != .none
     }
     
     // MARK: Invalidation
@@ -162,30 +115,31 @@ class LayoutController<ModelType: LayoutModel> {
         return false
     }
     
-    func configureInvalidationContext(forBoundsChange newBounds: CGRect, with context: UICollectionViewLayoutInvalidationContext, contentOffset: CGPoint) {
+    func configureInvalidationContext(forBoundsChange newBounds: CGRect, with context: UICollectionViewLayoutInvalidationContext) {
         if let geometryBefore = self.geometryInfo(.afterUpdate),
            newBounds.size != geometryBefore.viewSize,
            let currentModel = self.layoutModel(.afterUpdate),
             context.contentOffsetAdjustment == .zero {
             // viewSize change
             
-            var geometryAfter = geometryInfoProvider()
-            geometryAfter.viewSize = newBounds.size
             
-            let newLayout = self.makeNewLayout(geometryInfo: geometryAfter)
+            
+            let newLayout = self.container.makeNewLayout(forNewBounds: newBounds)
             
             context.contentSizeAdjustment = newLayout.model.contentSize - currentModel.contentSize
             context.contentOffsetAdjustment = self.getContentOffsetAdjustment(contentSizeBefore: currentModel.contentSize,
                                                                               geometryBefore: geometryBefore,
                                                                               contentSizeAfter: newLayout.model.contentSize,
-                                                                              geometryAfter: geometryAfter,
-                                                                              contentOffset: contentOffset).cgPoint
+                                                                              geometryAfter: newLayout.geometryInfo,
+                                                                              contentOffset: boundsProvider().origin).cgPoint
             
             
-            self.layoutAfterUpdate?.stickyController.freezeLayoutAttributes()
+            self.stickyController(.afterUpdate)?.freezeLayoutAttributes()
         }
         
-        if self.usesStickyViews(), let stickyController = self.layoutAfterUpdate?.stickyController {
+        
+        // This block MUST happen after the sticky controller has been frozen in case of a size change (remove if the sticky contoller is able to freeze on its own)
+        if self.usesStickyViews(), let stickyController = self.stickyController(.afterUpdate) {
             let rect = boundsProvider().union(newBounds)
             let invalidation = stickyController.indexPathsToInvalidate(in: rect)
             context.invalidateSupplementaryElements(ofKind: UICollectionView.elementKindSectionHeader, at: invalidation)
@@ -197,7 +151,7 @@ class LayoutController<ModelType: LayoutModel> {
             self.needsToReplaceModel()
         }
         
-        self.layoutAfterUpdate?.stickyController.invalidateVisibleBounds()
+        self.stickyController(.afterUpdate)?.invalidateVisibleBounds()
     }
     
     // MARK: Rect
@@ -229,9 +183,9 @@ class LayoutController<ModelType: LayoutModel> {
         let firstVisibleSection = cells[cellRange.lowerBound]!.indexPath.section
         let lastVisibleSection = cells[cellRange.upperBound]!.indexPath.section
         let visibleSections = (firstVisibleSection...lastVisibleSection).map { $0 }
-        let headers = self.layoutAfterUpdate!.stickyController.layoutAttributes(in: rect, visibleSections: visibleSections)
-
-        results.append(contentsOf: headers)
+        if let headers = self.stickyController(.afterUpdate)?.layoutAttributes(in: rect, visibleSections: visibleSections) {
+            results.append(contentsOf: headers)
+        }
         
        return results
     }
@@ -297,8 +251,8 @@ class LayoutController<ModelType: LayoutModel> {
     
     private func layoutAttributes(forSupplementaryViewOfKind elementKind: String,
                                   at indexPath: IndexPath,
-                                  state: UpdateState) -> LayoutAttributes? {
-        let layout = state == .afterUpdate ? layoutAfterUpdate : layoutBeforeUpdate
+                                  state: LayoutState) -> LayoutAttributes? {
+        let layout = self.container.layout(state)
         
         switch elementKind {
         case UICollectionView.elementKindSectionHeader:

@@ -62,6 +62,7 @@ class StickyController {
     }
     
     private func updateVisibleBoundsIfNeeded() {
+        // TODO: Check if we can freeze automatically when detecting a size change
         guard !self.visibleBoundsValid && !self.frozen else { return }
         
         self.bounds = self.boundsProvider()
