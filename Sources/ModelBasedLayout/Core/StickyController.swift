@@ -41,9 +41,6 @@ class StickyController {
     }
     
     private func buildCachedLayoutAttributes(dataSourceCounts: DataSourceCounts) {
-        guard self.stickyEdges != .none else { return }
-        
-        
         for section in 0..<dataSourceCounts.numberOfSections {
             self.cachedAttributes[section] = layoutAttributesProvider(section)
         }
@@ -57,7 +54,7 @@ class StickyController {
         self.frozen = true
     }
     
-    private func updateVisibleBoundsIfNeeded() {
+     func updateVisibleBoundsIfNeeded() {
         guard !self.visibleBoundsValid && !self.frozen else { return }
         
         let newBounds = self.boundsProvider()
@@ -75,8 +72,9 @@ class StickyController {
         self.visibleBoundsValid = true
     }
     
-    private func stickify(_ attrs: LayoutAttributes) -> LayoutAttributes {
+    func stickify(_ attrs: LayoutAttributes) -> LayoutAttributes {
         guard self.stickyEdges != .none else { return attrs }
+        self.updateVisibleBoundsIfNeeded()
         
         var newAttrs = attrs
         
@@ -97,12 +95,8 @@ class StickyController {
     }
     
 
-    func layoutAttributes(in rect: CGRect, visibleSections: [Int]) -> [LayoutAttributes] {
+    func layoutAttributes(in rect: CGRect) -> [LayoutAttributes] {
         self.updateVisibleBoundsIfNeeded()
-        guard self.stickyEdges != .none else {
-            return visibleSections.compactMap { layoutAttributesProvider($0) }.filter { $0.frame.intersects(rect) }
-        }
-        
         return cachedAttributes.values.compactMap { self.stickify($0) }.filter { $0.frame.intersects(rect) }
     }
     
@@ -119,7 +113,7 @@ class StickyController {
         self.updateVisibleBoundsIfNeeded()
         guard self.stickyEdges != .none else { return [] }
         
-        let result = self.layoutAttributes(in: rect, visibleSections: []).map { $0.indexPath }
+        let result = self.layoutAttributes(in: rect).map { $0.indexPath }
         return result
     }
 }

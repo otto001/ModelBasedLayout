@@ -42,12 +42,12 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
     }
     
     // MARK: ContentSize
-    public override var collectionViewContentSize: CGSize {
+    public override final var collectionViewContentSize: CGSize {
         self.controller.collectionViewContentSize
     }
     
     // MARK: Prepare
-    public override func prepare() {
+    public override final func prepare() {
         self.controller.prepare()
         
         super.prepare()
@@ -55,22 +55,22 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
     }
     
     // MARK: Prepare: Animated Bounds Change
-    public override func prepare(forAnimatedBoundsChange oldBounds: CGRect) {
+    public override final func prepare(forAnimatedBoundsChange oldBounds: CGRect) {
         super.prepare(forAnimatedBoundsChange: oldBounds)
     }
     
-    public override func finalizeAnimatedBoundsChange() {
+    public override final func finalizeAnimatedBoundsChange() {
         super.finalizeAnimatedBoundsChange()
         self.controller.finalize()
     }
 
     // MARK: Prepare: Collection View Updates
-    public override func prepare(forCollectionViewUpdates updateItems: [UICollectionViewUpdateItem]) {
+    public override final func prepare(forCollectionViewUpdates updateItems: [UICollectionViewUpdateItem]) {
         super.prepare(forCollectionViewUpdates: updateItems)
         self.controller.prepare(forCollectionViewUpdates: updateItems)
     }
     
-    public override func finalizeCollectionViewUpdates() {
+    public override final func finalizeCollectionViewUpdates() {
         super.finalizeCollectionViewUpdates()
         self.controller.finalize()
     }
@@ -105,18 +105,23 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
 //    }
 
     // MARK: Invalidation
-    public override func invalidateLayout() {
+    public final func invalidateModel() {
+        self.controller.needsToReplaceModel()
+        self.invalidateLayout()
+    }
+    
+    public override final func invalidateLayout() {
         super.invalidateLayout()
     }
     
  
-    public override func invalidateLayout(with context: UICollectionViewLayoutInvalidationContext) {
+    public override final func invalidateLayout(with context: UICollectionViewLayoutInvalidationContext) {
         super.invalidateLayout(with: context)
 
         self.controller.invalidateLayout(with: context)
     }
     
-    public override func invalidationContext(forBoundsChange newBounds: CGRect) -> UICollectionViewLayoutInvalidationContext {
+    public override final func invalidationContext(forBoundsChange newBounds: CGRect) -> UICollectionViewLayoutInvalidationContext {
         let context = super.invalidationContext(forBoundsChange: newBounds)
         
         self.controller.configureInvalidationContext(forBoundsChange: newBounds, with: context)
@@ -125,7 +130,7 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
     }
     
 
-    public override func shouldInvalidateLayout(forBoundsChange newBounds: CGRect) -> Bool {
+    public override final func shouldInvalidateLayout(forBoundsChange newBounds: CGRect) -> Bool {
         //print("shouldInvalidateLayout", newBounds)
         return self.controller.shouldInvalidateLayout(forBoundsChange: newBounds) || super.shouldInvalidateLayout(forBoundsChange: newBounds)
     }

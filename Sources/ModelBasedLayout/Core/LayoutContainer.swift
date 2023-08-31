@@ -9,7 +9,6 @@ import Foundation
 
 
 class LayoutContainer<ModelType: LayoutModel> {
-    // MARK: Layout Model & Data
     struct Layout {
         let geometryInfo: GeometryInfo
         let dataSourceCounts: DataSourceCounts

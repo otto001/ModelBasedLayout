@@ -13,7 +13,7 @@ public extension CATransform3D {
 
 
 public struct LayoutAttributes {
-    public let indexPath: IndexPath
+    public private(set) var indexPath: IndexPath
     
     public let elementCategory: UICollectionView.ElementCategory
     public let elementKind: String?
@@ -148,5 +148,11 @@ public struct LayoutAttributes {
         //collectionViewLayoutAttributes.transform3D = self.transform3D
         
         return collectionViewLayoutAttributes
+    }
+    
+    internal func withIndexPath(_ indexPath: IndexPath) -> Self {
+        var copy = self
+        copy.indexPath = indexPath
+        return copy
     }
 }
