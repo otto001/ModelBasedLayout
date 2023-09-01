@@ -23,8 +23,8 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
         return self.transitioningFrom != nil || self.transitioningTo != nil
     }
     
-    public var layoutModel: ModelType {
-        self.controller.layoutModel(.afterUpdate)!
+    public var layoutModel: ModelType? {
+        self.controller.layoutModel(.afterUpdate)
     }
     
     public init(_ model: @escaping (_ dataSourceCounts: DataSourceCounts, _ geometryInfo: GeometryInfo) -> ModelType) {
