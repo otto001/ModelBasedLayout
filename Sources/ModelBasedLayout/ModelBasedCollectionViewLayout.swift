@@ -149,14 +149,17 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
     // MARK: Items
 
     public override final func initialLayoutAttributesForAppearingItem(at indexPath: IndexPath) -> UICollectionViewLayoutAttributes? {
+        guard indexPath.count == 2 else { return nil }
         self.controller.initialLayoutAttributesForAppearingItem(at: .init(indexPath))?.forLayout()
     }
 
     public override final func layoutAttributesForItem(at indexPath: IndexPath) -> UICollectionViewLayoutAttributes? {
+        guard indexPath.count == 2 else { return nil }
         self.controller.layoutAttributesForItem(at: .init(indexPath))?.forLayout()
     }
 
     public override final func finalLayoutAttributesForDisappearingItem(at indexPath: IndexPath) -> UICollectionViewLayoutAttributes? {
+        guard indexPath.count == 2 else { return nil }
         self.controller.finalLayoutAttributesForDisappearingItem(at: .init(indexPath))?.forLayout()
     }
     
@@ -164,14 +167,17 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
     
     // MARK: Supplementary Views
     public override final func initialLayoutAttributesForAppearingSupplementaryElement(ofKind elementKind: String, at indexPath: IndexPath) -> UICollectionViewLayoutAttributes? {
+        guard indexPath.count == 2 else { return nil }
         self.controller.initialLayoutAttributesForAppearingSupplementaryElement(ofKind: elementKind, at: .init(indexPath))?.forLayout()
     }
     
     public override final func layoutAttributesForSupplementaryView(ofKind elementKind: String, at indexPath: IndexPath) -> UICollectionViewLayoutAttributes? {
+        guard indexPath.count == 2 else { return nil }
         self.controller.layoutAttributesForSupplementaryView(ofKind: elementKind, at: .init(indexPath))?.forLayout()
     }
     
     public override final func finalLayoutAttributesForDisappearingSupplementaryElement(ofKind elementKind: String, at indexPath: IndexPath) -> UICollectionViewLayoutAttributes? {
+        guard indexPath.count == 2 else { return nil }
         self.controller.finalLayoutAttributesForDisappearingSupplementaryElement(ofKind: elementKind, at: .init(indexPath))?.forLayout()
     }
 }
