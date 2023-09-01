@@ -145,30 +145,30 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
     // MARK: Items
 
     public override final func initialLayoutAttributesForAppearingItem(at indexPath: IndexPath) -> UICollectionViewLayoutAttributes? {
-        self.controller.initialLayoutAttributesForAppearingItem(at: indexPath)?.forLayout()
+        self.controller.initialLayoutAttributesForAppearingItem(at: .init(indexPath))?.forLayout()
     }
 
     public override final func layoutAttributesForItem(at indexPath: IndexPath) -> UICollectionViewLayoutAttributes? {
-        self.controller.layoutAttributesForItem(at: indexPath)?.forLayout()
+        self.controller.layoutAttributesForItem(at: .init(indexPath))?.forLayout()
     }
 
     public override final func finalLayoutAttributesForDisappearingItem(at indexPath: IndexPath) -> UICollectionViewLayoutAttributes? {
-        self.controller.finalLayoutAttributesForDisappearingItem(at: indexPath)?.forLayout()
+        self.controller.finalLayoutAttributesForDisappearingItem(at: .init(indexPath))?.forLayout()
     }
     
     
     
     // MARK: Supplementary Views
     public override final func initialLayoutAttributesForAppearingSupplementaryElement(ofKind elementKind: String, at indexPath: IndexPath) -> UICollectionViewLayoutAttributes? {
-        self.controller.initialLayoutAttributesForAppearingSupplementaryElement(ofKind: elementKind, at: indexPath)?.forLayout()
+        self.controller.initialLayoutAttributesForAppearingSupplementaryElement(ofKind: elementKind, at: .init(indexPath))?.forLayout()
     }
     
     public override final func layoutAttributesForSupplementaryView(ofKind elementKind: String, at indexPath: IndexPath) -> UICollectionViewLayoutAttributes? {
-        self.controller.layoutAttributesForSupplementaryView(ofKind: elementKind, at: indexPath)?.forLayout()
+        self.controller.layoutAttributesForSupplementaryView(ofKind: elementKind, at: .init(indexPath))?.forLayout()
     }
     
     public override final func finalLayoutAttributesForDisappearingSupplementaryElement(ofKind elementKind: String, at indexPath: IndexPath) -> UICollectionViewLayoutAttributes? {
-        self.controller.finalLayoutAttributesForDisappearingSupplementaryElement(ofKind: elementKind, at: indexPath)?.forLayout()
+        self.controller.finalLayoutAttributesForDisappearingSupplementaryElement(ofKind: elementKind, at: .init(indexPath))?.forLayout()
     }
 }
 

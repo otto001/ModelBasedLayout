@@ -72,8 +72,15 @@ class LayoutContainer<ModelType: LayoutModel> {
         let model = modelProvider(dataSourceCounts, geometryInfo)
         let stickyController = StickyController(dataSourceCounts: dataSourceCounts,
                                                 geometryInfo: geometryInfo,
-                                                boundsProvider: self.boundsProvider) { section in
-            model.layoutAttributes(forHeaderOfSection: section)
+                                                boundsProvider: self.boundsProvider) { (elementKind: ElementKind, indexPair: IndexPair) in
+            switch elementKind {
+            case .header:
+                return model.layoutAttributes(forHeaderOfSection: indexPair.section)
+            case .additionalSupplementaryView(let elementKind):
+                return model.layoutAttributes(forAdditionalSupplementaryViewOfKind: elementKind, at: indexPair)
+            default:
+                return nil
+            }
         }
         
         self.cachedLayout = Layout(geometryInfo: geometryInfo, dataSourceCounts: dataSourceCounts, stickyController: stickyController, model: model)

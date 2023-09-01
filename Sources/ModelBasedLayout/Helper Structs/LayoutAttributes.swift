@@ -11,15 +11,12 @@ public extension CATransform3D {
     static var identity: CATransform3D = .init(m11: 1, m12: 0, m13: 0, m14: 0, m21: 0, m22: 1, m23: 0, m24: 0, m31: 0, m32: 0, m33: 1, m34: 0, m41: 0, m42: 0, m43: 0, m44: 1)
 }
 
-public enum StickyBoundsBehaviour {
-    case push, fade
-}
+
 
 public struct LayoutAttributes {
-    public private(set) var indexPath: IndexPath
+    public private(set) var indexPair: IndexPair
     
-    public let elementCategory: UICollectionView.ElementCategory
-    public let elementKind: String?
+    public let elementKind: ElementKind
    
     public var frame: CGRect
     public var zIndex: Int
@@ -30,20 +27,21 @@ public struct LayoutAttributes {
     public var transform: CGAffineTransform
     
     // Sticky
-    public var stickyEdges: Edges = .none
-    public var stickyBounds: CGRect?
-    public var stickyBoundsBehaviour: StickyBoundsBehaviour = .push
+    public var stickyAttributes: StickyAttributes?
     internal var extendedStickyBounds: CGRect? {
-        if let stickyBounds = stickyBounds {
-            switch stickyBoundsBehaviour {
+        if let stickyAttributes = stickyAttributes {
+            switch stickyAttributes.boundingBehaviour {
             case .push:
-                return stickyBounds
+                return stickyAttributes.stickyBounds
             case .fade:
-                return stickyBounds.insetBy(dx: -frame.width, dy: -frame.height)
+                return stickyAttributes.stickyBounds.insetBy(dx: -frame.width, dy: -frame.height)
             }
             
         }
         return nil
+    }
+    public var isSticky: Bool {
+        (stickyAttributes?.stickyBounds ?? .none) != .none
     }
     
     public var center: CGPoint {
@@ -65,59 +63,24 @@ public struct LayoutAttributes {
         }
     }
     
-    public init(forCellAt indexPath: IndexPath,
+    public init(indexPair: IndexPair,
+                elementKind: ElementKind,
          frame: CGRect = .zero, zIndex: Int = 0,
          alpha: CGFloat = 1, isHidden: Bool = false,
          transform: CGAffineTransform = .identity) {
-        self.indexPath = indexPath
-        self.elementCategory = .cell
-        self.elementKind = nil
-        self.frame = frame
-        self.zIndex = zIndex
-        self.alpha = alpha
-        self.isHidden = isHidden
-        self.transform = transform
-        //self.transform3D = transform3D
-       // self.stickyEdges = .none
-    }
-    
-    public init(forSupplementaryViewAt indexPath: IndexPath, elementKind: String?,
-         frame: CGRect = .zero, zIndex: Int = 0,
-         alpha: CGFloat = 1, isHidden: Bool = false,
-         transform: CGAffineTransform = .identity) {
-        self.indexPath = indexPath
-        self.elementCategory = .supplementaryView
+        self.indexPair = indexPair
         self.elementKind = elementKind
         self.frame = frame
         self.zIndex = zIndex
         self.alpha = alpha
         self.isHidden = isHidden
         self.transform = transform
-        //self.transform3D = transform3D
-        //self.stickyEdges = stickyEdges
-    }
-    
-    public init(forDecorativeViewAt indexPath: IndexPath, elementKind: String?,
-         frame: CGRect = .zero, zIndex: Int = 0,
-         alpha: CGFloat = 1, isHidden: Bool = false,
-         transform: CGAffineTransform = .identity) {
-        self.indexPath = indexPath
-        self.elementCategory = .decorationView
-        self.elementKind = elementKind
-        self.frame = frame
-        self.zIndex = zIndex
-        self.alpha = alpha
-        self.isHidden = isHidden
-        self.transform = transform
-        //self.transform3D = transform3D
-        //self.stickyEdges = .none
     }
     
     public init(_ collectionViewLayoutAttributes: UICollectionViewLayoutAttributes) {
-        self.indexPath = collectionViewLayoutAttributes.indexPath
+        self.indexPair = .init(collectionViewLayoutAttributes.indexPath)
 
-        self.elementCategory = collectionViewLayoutAttributes.representedElementCategory
-        self.elementKind = collectionViewLayoutAttributes.representedElementKind
+        self.elementKind = .init(from: collectionViewLayoutAttributes)
 
         self.frame = collectionViewLayoutAttributes.frame
         self.zIndex = collectionViewLayoutAttributes.zIndex
@@ -132,15 +95,16 @@ public struct LayoutAttributes {
     public func forLayout() -> UICollectionViewLayoutAttributes {
         let collectionViewLayoutAttributes: UICollectionViewLayoutAttributes
         
-        switch self.elementCategory {
+        
+        switch self.elementKind {
         case .cell:
-            collectionViewLayoutAttributes = UICollectionViewLayoutAttributes(forCellWith: indexPath)
-        case .supplementaryView:
-            collectionViewLayoutAttributes = UICollectionViewLayoutAttributes(forSupplementaryViewOfKind: elementKind!, with: indexPath)
-        case .decorationView:
-            collectionViewLayoutAttributes = UICollectionViewLayoutAttributes(forDecorationViewOfKind: elementKind!, with: indexPath)
-        @unknown default:
-            fatalError("Unsupported element Category \"\(self.elementCategory)\"")
+            collectionViewLayoutAttributes = UICollectionViewLayoutAttributes(forCellWith: indexPair.indexPath)
+        case .header:
+            collectionViewLayoutAttributes = UICollectionViewLayoutAttributes(forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader, with: indexPair.indexPath)
+        case .additionalSupplementaryView(let elementKind):
+            collectionViewLayoutAttributes = UICollectionViewLayoutAttributes(forSupplementaryViewOfKind: elementKind, with: indexPair.indexPath)
+        case .decorativeView(let elementKind):
+            collectionViewLayoutAttributes = UICollectionViewLayoutAttributes(forDecorationViewOfKind: elementKind, with: indexPair.indexPath)
         }
         
         collectionViewLayoutAttributes.frame = self.frame
@@ -155,9 +119,9 @@ public struct LayoutAttributes {
         return collectionViewLayoutAttributes
     }
     
-    internal func withIndexPath(_ indexPath: IndexPath) -> Self {
+    internal func withIndexPair(_ indexPair: IndexPair) -> Self {
         var copy = self
-        copy.indexPath = indexPath
+        copy.indexPair = indexPair
         return copy
     }
     

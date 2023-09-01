@@ -11,8 +11,8 @@ import UIKit
 
 struct DataBatchUpdate {
 
-    private var indexPathsAfterUpdate: [IndexPath: IndexPath?] = [:]
-    private var indexPathsBeforeUpdate: [IndexPath: IndexPath] = [:]
+    private var indexPairsAfterUpdate: [IndexPair: IndexPair?] = [:]
+    private var indexPairsBeforeUpdate: [IndexPair: IndexPair] = [:]
     
     private var sectionIndiciesAfterUpdate: [Int: Int?] = [:]
     
@@ -29,14 +29,14 @@ struct DataBatchUpdate {
         self = .init(dataSourceCounts: dataSourceCounts, updateItems: updateItems.compactMap {DataUpdate($0)})
     }
     
-    func indexPathAfterUpdate(for indexPath: IndexPath) -> IndexPath? {
-        guard sectionIndiciesAfterUpdate[indexPath.section] != nil else { return nil }
-        return indexPathsAfterUpdate[indexPath] ?? nil
+    func indexPairAfterUpdate(for indexPair: IndexPair) -> IndexPair? {
+        guard sectionIndiciesAfterUpdate[indexPair.section] != nil else { return nil }
+        return indexPairsAfterUpdate[indexPair] ?? nil
     }
     
-    func indexPathBeforeUpdate(for indexPath: IndexPath) -> IndexPath? {
-        //guard sectionIndiciesAfterUpdate[indexPath.section] != nil else { return nil }
-        return indexPathsBeforeUpdate[indexPath]
+    func indexPairBeforeUpdate(for indexPair: IndexPair) -> IndexPair? {
+        //guard sectionIndiciesAfterUpdate[indexPair.section] != nil else { return nil }
+        return indexPairsBeforeUpdate[indexPair]
     }
     
     
@@ -72,11 +72,11 @@ struct DataBatchUpdate {
         
         for dataUpdate in dataUpdates[index...] {
             switch dataUpdate {
-            case .deleteItem(let indexPath):
-                deletedItemsPerSection[indexPath.section].append(indexPath.item)
+            case .deleteItem(let indexPair):
+                deletedItemsPerSection[indexPair.section].append(indexPair.item)
 
-            case .insertItem(let indexPath):
-                insertedItemsPerSection[indexPath.section].append(indexPath.item)
+            case .insertItem(let indexPair):
+                insertedItemsPerSection[indexPair.section].append(indexPair.item)
 
             default:
                 fatalError("Meh")
@@ -99,19 +99,19 @@ struct DataBatchUpdate {
             let withinSectionMoves = calculateIndexShifts(numberOfItems: section.itemCount, deletions: deletedIndicies, insertions: insertedIndicies)
             
             for (indexBeforeUpdate, indexAfterUpdate) in withinSectionMoves {
-                indexPathsAfterUpdate[IndexPath(item: indexBeforeUpdate, section: sectionIndexBeforeUpdate)] = indexAfterUpdate.map {
-                    IndexPath(item: $0, section: sectionIndexAfterUpdate)
+                indexPairsAfterUpdate[IndexPair(item: indexBeforeUpdate, section: sectionIndexBeforeUpdate)] = indexAfterUpdate.map {
+                    IndexPair(item: $0, section: sectionIndexAfterUpdate)
                 }
             }
         }
     }
     
     private mutating func buildReverseAccessors() {
-        indexPathsBeforeUpdate.removeAll()
+        indexPairsBeforeUpdate.removeAll()
         
-        for (indexPathBeforeUpdate, indexPathAfterUpdate) in indexPathsAfterUpdate {
-            if let indexPathAfterUpdate = indexPathAfterUpdate {
-                indexPathsBeforeUpdate[indexPathAfterUpdate] = indexPathBeforeUpdate
+        for (indexPairBeforeUpdate, indexPairAfterUpdate) in indexPairsAfterUpdate {
+            if let indexPairAfterUpdate = indexPairAfterUpdate {
+                indexPairsBeforeUpdate[indexPairAfterUpdate] = indexPairBeforeUpdate
             }
         }
     }

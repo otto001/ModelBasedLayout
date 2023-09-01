@@ -9,13 +9,13 @@ import UIKit
 
 
 enum DataUpdate: Hashable, Comparable {
-    case insertItem(indexPath: IndexPath)
+    case insertItem(indexPair: IndexPair)
     case insertSection(sectionIndex: Int)
     
-    case reloadItem(indexPathBeforeUpdate: IndexPath, indexPathAfterUpdate: IndexPath)
+    case reloadItem(indexPairBeforeUpdate: IndexPair, indexPairAfterUpdate: IndexPair)
     case reloadSection(sectionIndexBeforeUpdate: Int, sectionIndexAfterUpdate: Int)
     
-    case deleteItem(indexPath: IndexPath)
+    case deleteItem(indexPair: IndexPair)
     case deleteSection(sectionIndex: Int)
     
     private var sortPriority: Int {
@@ -42,20 +42,20 @@ enum DataUpdate: Hashable, Comparable {
         } else if lhs.sortPriority == rhs.sortPriority {
             switch (lhs, rhs) {
                 
-            case (.insertItem(let indexPathLhs), .insertItem(let indexPathRhs)):
-                return indexPathLhs < indexPathRhs
+            case (.insertItem(let indexPairLhs), .insertItem(let indexPairRhs)):
+                return indexPairLhs < indexPairRhs
                 
             case (.insertSection(let sectionIndexLhs), .insertSection(let sectionIndexRhs)):
                 return sectionIndexLhs < sectionIndexRhs
                 
-            case (.reloadItem(let indexPathLhs, _), .reloadItem(let indexPathRhs, _)):
-                return indexPathLhs < indexPathRhs
+            case (.reloadItem(let indexPairLhs, _), .reloadItem(let indexPairRhs, _)):
+                return indexPairLhs < indexPairRhs
                 
             case (.reloadSection(let sectionIndexLhs, _), .reloadSection(let sectionIndexRhs, _)):
                 return sectionIndexLhs < sectionIndexRhs
                 
-            case (.deleteItem(let indexPathLhs), .deleteItem(let indexPathRhs)):
-                return indexPathLhs < indexPathRhs
+            case (.deleteItem(let indexPairLhs), .deleteItem(let indexPairRhs)):
+                return indexPairLhs < indexPairRhs
                 
             case (.deleteSection(let sectionIndexLhs), .deleteSection(let sectionIndexRhs)):
                 return sectionIndexLhs < sectionIndexRhs
@@ -78,7 +78,7 @@ enum DataUpdate: Hashable, Comparable {
             if indexPath.item == NSNotFound {
                 self = .deleteSection(sectionIndex: indexPath.section)
             } else {
-                self = .deleteItem(indexPath: indexPath)
+                self = .deleteItem(indexPair: .init(indexPath))
             }
             
             
@@ -89,7 +89,7 @@ enum DataUpdate: Hashable, Comparable {
             if indexPathBeforeUpdate.item == NSNotFound {
                 self = .reloadSection(sectionIndexBeforeUpdate: indexPathBeforeUpdate.section, sectionIndexAfterUpdate: indexPathAfterUpdate.section)
             } else {
-                self = .reloadItem(indexPathBeforeUpdate: indexPathBeforeUpdate, indexPathAfterUpdate: indexPathAfterUpdate)
+                self = .reloadItem(indexPairBeforeUpdate: .init(indexPathBeforeUpdate), indexPairAfterUpdate: .init(indexPathAfterUpdate))
             }
             
             
@@ -99,7 +99,7 @@ enum DataUpdate: Hashable, Comparable {
             if indexPath.item == NSNotFound {
                 self = .insertSection(sectionIndex: indexPath.section)
             } else {
-                self = .insertItem(indexPath: indexPath)
+                self = .insertItem(indexPair: .init(indexPath))
             }
             
             

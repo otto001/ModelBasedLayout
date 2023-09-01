@@ -138,9 +138,8 @@ class LayoutController<ModelType: LayoutModel> {
         }
         
         if self.usesStickyViews(), let stickyController = self.stickyController(.afterUpdate) {
-            let rect = boundsProvider().union(newBounds)
-            let invalidation = stickyController.indexPathsToInvalidate(in: rect)
-            context.invalidateSupplementaryElements(ofKind: UICollectionView.elementKindSectionHeader, at: invalidation)
+            stickyController.configureInvalidationContext(forBoundsChange: newBounds, with: context)
+            
         }
     }
     
@@ -156,106 +155,108 @@ class LayoutController<ModelType: LayoutModel> {
     func layoutAttributesForElements(in rect: CGRect) -> [LayoutAttributes]? {
         
         if let items = self.layoutModel(.afterUpdate)?.items(in: rect) {
-            return items.compactMap { item in
+            return items.compactMap { (item: Item) -> LayoutAttributes? in
                 switch item {
-                case .cell(let indexPath):
-                    return self.layoutAttributesForItem(at: indexPath)
+                case .cell(let indexPair):
+                    return self.layoutAttributesForItem(at: indexPair)
                 case .header(let section):
-                    return self.stickyController(.afterUpdate)?.layoutAttributes(for: section)
+                    return self.stickyController(.afterUpdate)?.layoutAttributes(forItemOfKind: .header, at: IndexPair(item: 0, section: section))
+                case .additionalSupplementaryView(let elementKind, let indexPair):
+                    return self.stickyController(.afterUpdate)?.layoutAttributes(forItemOfKind: .additionalSupplementaryView(elementKind), at: indexPair)
                 default:
                     return nil
                 }
             }
         }
-        
+        return nil
         
         // TODO: Optimize!
-        guard let dataSourceCounts = self.dataSourceCounts(.afterUpdate) else { return nil }
-        
-        let indexPaths = (0..<dataSourceCounts.itemsCount).lazy.map { dataSourceCounts.indexPath(for: $0) }
-        
-        let cells = indexPaths.map { self.layoutAttributesForItem(at: $0) }
-
-        let cellRange = cells.binarySearchRange { attrs in
-            if attrs!.frame.intersects(rect) {
-                return .equal
-            } else if attrs!.frame.maxY <= rect.minY || attrs!.frame.maxX <= rect.minX {
-                return .before
-            } else {
-                return .after
-            }
-        }
-
-        guard let cellRange = cellRange else {
-            return nil
-        }
-
-        var results = Array(cells[cellRange].compactMap {$0})
-        
-        // This is an ugly workaround. Sometimes, for example when a section is deleted and therefore new section headers (that were out of view previosuly)
-        // swoop into view, the collectionview will not animate then into view, not even asking for initial layout attributes.
-        // We were able to fix this by returning too many headers, even some that are out of view before and after the update, which we achvieve by making the query rect bigger for the headers.
-        let headerRect = rect.insetBy(dx: -rect.width/2, dy: -rect.height/2)
-
-        if let headers = self.stickyController(.afterUpdate)?.layoutAttributes(in: headerRect) {
-            results.append(contentsOf: headers)
-        }
-        
-       return results
+//        guard let dataSourceCounts = self.dataSourceCounts(.afterUpdate) else { return nil }
+//
+//        let indexPairs = (0..<dataSourceCounts.itemsCount).lazy.map { dataSourceCounts.indexPair(for: $0) }
+//
+//        let cells = indexPairs.map { self.layoutAttributesForItem(at: $0) }
+//
+//        let cellRange = cells.binarySearchRange { attrs in
+//            if attrs!.frame.intersects(rect) {
+//                return .equal
+//            } else if attrs!.frame.maxY <= rect.minY || attrs!.frame.maxX <= rect.minX {
+//                return .before
+//            } else {
+//                return .after
+//            }
+//        }
+//
+//        guard let cellRange = cellRange else {
+//            return nil
+//        }
+//
+//        var results = Array(cells[cellRange].compactMap {$0})
+//
+//        // This is an ugly workaround. Sometimes, for example when a section is deleted and therefore new section headers (that were out of view previosuly)
+//        // swoop into view, the collectionview will not animate then into view, not even asking for initial layout attributes.
+//        // We were able to fix this by returning too many headers, even some that are out of view before and after the update, which we achvieve by making the query rect bigger for the headers.
+////        let headerRect = rect.insetBy(dx: -rect.width/2, dy: -rect.height/2)
+////
+////        if let headers = self.stickyController(.afterUpdate)?.layoutAttributes(in: headerRect) {
+////            results.append(contentsOf: headers)
+////        }
+//
+//       return results
     }
     
     // MARK: Layout Attributes
-    func initialLayoutAttributesForAppearingItem(at indexPath: IndexPath) -> LayoutAttributes? {
+    func initialLayoutAttributesForAppearingItem(at indexPair: IndexPair) -> LayoutAttributes? {
 
         if let dataChange = self.dataChange {
-            if let indexPathBeforeUpdate = dataChange.indexPathBeforeUpdate(for: indexPath) {
-                return self.layoutModel(.beforeUpdate)!.layoutAttributes(forItemAt: indexPathBeforeUpdate)?.withIndexPath(indexPath)
+            if let indexPairBeforeUpdate = dataChange.indexPairBeforeUpdate(for: indexPair) {
+                return self.layoutModel(.beforeUpdate)!.layoutAttributes(forItemAt: indexPairBeforeUpdate)?.withIndexPair(indexPair)
             } else {
-                switch (self.layoutModel(.afterUpdate)?.transitionAnimation(forItemAt: indexPath) ?? .none) {
+                switch (self.layoutModel(.afterUpdate)?.transitionAnimation(forItemAt: indexPair) ?? .none) {
                 case .none:
-                    return self.layoutModel(.afterUpdate)?.layoutAttributes(forItemAt: indexPath)
+                    return self.layoutModel(.afterUpdate)?.layoutAttributes(forItemAt: indexPair)
                 case .opacity:
-                    var layoutAttrs = self.layoutModel(.afterUpdate)?.layoutAttributes(forItemAt: indexPath)
+                    var layoutAttrs = self.layoutModel(.afterUpdate)?.layoutAttributes(forItemAt: indexPair)
                     layoutAttrs?.alpha = 0
                     return layoutAttrs
                     
                 case .custom:
-                    return self.layoutModel(.afterUpdate)?.initialLayoutAttributes(forInsertedItemAt: indexPath)
+                    return self.layoutModel(.afterUpdate)?.initialLayoutAttributes(forInsertedItemAt: indexPair)
                 }
             }
         }
         
-        let attrs = self.layoutModel(.beforeUpdate)?.layoutAttributes(forItemAt: indexPath)
+        let attrs = self.layoutModel(.beforeUpdate)?.layoutAttributes(forItemAt: indexPair)
         return attrs
     }
     
-    func layoutAttributesForItem(at indexPath: IndexPath) -> LayoutAttributes? {
-        let layoutAttrs = self.layoutModel(.afterUpdate)?.layoutAttributes(forItemAt: indexPath)
+    func layoutAttributesForItem(at indexPair: IndexPair) -> LayoutAttributes? {
+        let layoutAttrs = self.layoutModel(.afterUpdate)?.layoutAttributes(forItemAt: indexPair)
         return layoutAttrs
     }
     
-    func finalLayoutAttributesForDisappearingItem(at indexPath: IndexPath) -> LayoutAttributes? {
+    func finalLayoutAttributesForDisappearingItem(at indexPair: IndexPair) -> LayoutAttributes? {
         if let dataChange = self.dataChange {
-            if dataChange.indexPathAfterUpdate(for: indexPath) != nil {
+            if dataChange.indexPairAfterUpdate(for: indexPair) != nil {
                 return nil
             } else {
-                switch (self.layoutModel(.beforeUpdate)?.transitionAnimation(forItemAt: indexPath) ?? .none) {
+                switch (self.layoutModel(.beforeUpdate)?.transitionAnimation(forItemAt: indexPair) ?? .none) {
                 case .none:
-                    return self.layoutModel(.beforeUpdate)?.layoutAttributes(forItemAt: indexPath)
+                    return self.layoutModel(.beforeUpdate)?.layoutAttributes(forItemAt: indexPair)
                     
                 case .opacity:
-                    var layoutAttrs = self.layoutModel(.beforeUpdate)?.layoutAttributes(forItemAt: indexPath)
+                    var layoutAttrs = self.layoutModel(.beforeUpdate)?.layoutAttributes(forItemAt: indexPair)
                     layoutAttrs?.alpha = 0
                     return layoutAttrs
                     
                 case .custom:
-                    return self.layoutModel(.beforeUpdate)?.finalLayoutAttributes(forDeletedItemAt: indexPath)
+                    return self.layoutModel(.beforeUpdate)?.finalLayoutAttributes(forDeletedItemAt: indexPair)
                 }
                 
             }
         }
         
-        let attrs = self.layoutModel(.afterUpdate)?.layoutAttributes(forItemAt: indexPath)
+        let attrs = self.layoutModel(.afterUpdate)?.layoutAttributes(forItemAt: indexPair)
         return attrs
     }
     
@@ -264,57 +265,58 @@ class LayoutController<ModelType: LayoutModel> {
     // MARK: Supplementary Views
     
     private func layoutAttributes(forSupplementaryViewOfKind elementKind: String,
-                                  at indexPath: IndexPath,
+                                  at indexPair: IndexPair,
                                   state: LayoutState) -> LayoutAttributes? {
         let layout = self.container.layout(state)
+
         
         switch elementKind {
         case UICollectionView.elementKindSectionHeader:
-            return layout?.stickyController.layoutAttributes(for: indexPath.section)
+            return layout?.stickyController.layoutAttributes(forItemOfKind: .header, at: indexPair)
         default:
-            return layout?.model.layoutAttributes(forAdditionalSupplementaryViewOfKind: elementKind, at: indexPath)
+            return layout?.stickyController.layoutAttributes(forItemOfKind: .additionalSupplementaryView(elementKind), at: indexPair)
         }
         
     }
     
-    func initialLayoutAttributesForAppearingSupplementaryElement(ofKind elementKind: String, at indexPath: IndexPath) -> LayoutAttributes? {
+    func initialLayoutAttributesForAppearingSupplementaryElement(ofKind elementKind: String, at indexPair: IndexPair) -> LayoutAttributes? {
 
         if let dataChange = self.dataChange {
-            if let indexPathBeforeUpdate = dataChange.indexPathBeforeUpdate(for: indexPath) {
-                return self.layoutAttributes(forSupplementaryViewOfKind: elementKind, at: indexPathBeforeUpdate, state: .beforeUpdate)?.withIndexPath(indexPath)
+            if let indexPairBeforeUpdate = dataChange.indexPairBeforeUpdate(for: indexPair) {
+                return self.layoutAttributes(forSupplementaryViewOfKind: elementKind, at: indexPairBeforeUpdate, state: .beforeUpdate)?.withIndexPair(indexPair)
             } else {
-                switch (self.layoutModel(.afterUpdate)?.transitionAnimation(forSupplementaryViewOfKind: elementKind, at: indexPath) ?? .none) {
+                switch (self.layoutModel(.afterUpdate)?.transitionAnimation(forSupplementaryViewOfKind: elementKind, at: indexPair) ?? .none) {
                 case .none:
-                    return self.layoutAttributes(forSupplementaryViewOfKind: elementKind, at: indexPath, state: .afterUpdate)
+                    return self.layoutAttributes(forSupplementaryViewOfKind: elementKind, at: indexPair, state: .afterUpdate)
                 case .opacity:
-                    var layoutAttrs = self.layoutAttributes(forSupplementaryViewOfKind: elementKind, at: indexPath, state: .afterUpdate)
+                    var layoutAttrs = self.layoutAttributes(forSupplementaryViewOfKind: elementKind, at: indexPair, state: .afterUpdate)
                     layoutAttrs?.alpha = 0
                     return layoutAttrs
 
                 case .custom:
-                    return self.layoutModel(.afterUpdate)?.initialLayoutAttributes(forAdditionalInsertedSupplementaryViewOfKind: elementKind, at: indexPath)
+                    return self.layoutModel(.afterUpdate)?.initialLayoutAttributes(forAdditionalInsertedSupplementaryViewOfKind: elementKind, at: indexPair)
                 }
             }
         }
         
-        return self.layoutAttributes(forSupplementaryViewOfKind: elementKind, at: indexPath, state: .beforeUpdate)
+        return self.layoutAttributes(forSupplementaryViewOfKind: elementKind, at: indexPair, state: .beforeUpdate)
     }
     
-    func layoutAttributesForSupplementaryView(ofKind elementKind: String, at indexPath: IndexPath) -> LayoutAttributes? {
-        return self.layoutAttributes(forSupplementaryViewOfKind: elementKind, at: indexPath, state: .afterUpdate)
+    func layoutAttributesForSupplementaryView(ofKind elementKind: String, at indexPair: IndexPair) -> LayoutAttributes? {
+        return self.layoutAttributes(forSupplementaryViewOfKind: elementKind, at: indexPair, state: .afterUpdate)
     }
     
-    func finalLayoutAttributesForDisappearingSupplementaryElement(ofKind elementKind: String, at indexPath: IndexPath) -> LayoutAttributes? {
+    func finalLayoutAttributesForDisappearingSupplementaryElement(ofKind elementKind: String, at indexPair: IndexPair) -> LayoutAttributes? {
 
         if let dataChange = self.dataChange {
-            if dataChange.indexPathAfterUpdate(for: indexPath) != nil {
+            if dataChange.indexPairAfterUpdate(for: indexPair) != nil {
                 return nil
             } else {
-                switch (self.layoutModel(.beforeUpdate)?.transitionAnimation(forSupplementaryViewOfKind: elementKind, at: indexPath) ?? .none)  {
+                switch (self.layoutModel(.beforeUpdate)?.transitionAnimation(forSupplementaryViewOfKind: elementKind, at: indexPair) ?? .none)  {
                 case .none:
-                    return self.layoutAttributes(forSupplementaryViewOfKind: elementKind, at: indexPath, state: .beforeUpdate)
+                    return self.layoutAttributes(forSupplementaryViewOfKind: elementKind, at: indexPair, state: .beforeUpdate)
                 case .opacity:
-                    var layoutAttrs = self.layoutAttributes(forSupplementaryViewOfKind: elementKind, at: indexPath, state: .beforeUpdate)
+                    var layoutAttrs = self.layoutAttributes(forSupplementaryViewOfKind: elementKind, at: indexPair, state: .beforeUpdate)
                     layoutAttrs?.alpha = 0
                     
                     // For some reason, we need to change the zIndex of the layout attributes by any amount for it to be respected at all. It is not clear yet why.
@@ -322,11 +324,11 @@ class LayoutController<ModelType: LayoutModel> {
                     return layoutAttrs
 
                 case .custom:
-                    return self.layoutModel(.beforeUpdate)?.finalLayoutAttributes(forAdditionalDeletedSupplementaryViewOfKind: elementKind, at: indexPath)
+                    return self.layoutModel(.beforeUpdate)?.finalLayoutAttributes(forAdditionalDeletedSupplementaryViewOfKind: elementKind, at: indexPair)
                 }
             }
         }
         
-        return self.layoutAttributes(forSupplementaryViewOfKind: elementKind, at: indexPath, state: .afterUpdate)
+        return self.layoutAttributes(forSupplementaryViewOfKind: elementKind, at: indexPair, state: .afterUpdate)
     }
 }

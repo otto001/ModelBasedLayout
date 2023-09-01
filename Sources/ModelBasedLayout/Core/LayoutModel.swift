@@ -12,29 +12,29 @@ public protocol LayoutModel {
     
     var contentSize: CGSize { get }
     
-    func transitionAnimation(forItemAt indexPath: IndexPath) -> TransitionAnimation
-    func transitionAnimation(forSupplementaryViewOfKind elementKind: String, at indexPath: IndexPath) -> TransitionAnimation
+    func transitionAnimation(forItemAt indexPair: IndexPair) -> TransitionAnimation
+    func transitionAnimation(forSupplementaryViewOfKind elementKind: String, at indexPair: IndexPair) -> TransitionAnimation
     
     func items(in rect: CGRect) -> [Item]?
     
-    func layoutAttributes(forItemAt indexPath: IndexPath) -> LayoutAttributes?
-    func initialLayoutAttributes(forInsertedItemAt indexPath: IndexPath) -> LayoutAttributes?
-    func finalLayoutAttributes(forDeletedItemAt indexPath: IndexPath) -> LayoutAttributes?
+    func layoutAttributes(forItemAt indexPair: IndexPair) -> LayoutAttributes?
+    func initialLayoutAttributes(forInsertedItemAt indexPair: IndexPair) -> LayoutAttributes?
+    func finalLayoutAttributes(forDeletedItemAt indexPair: IndexPair) -> LayoutAttributes?
     
     func layoutAttributes(forHeaderOfSection section: Int) -> LayoutAttributes?
     
-    func layoutAttributes(forAdditionalSupplementaryViewOfKind elementKind: String, at indexPath: IndexPath) -> LayoutAttributes?
-    func initialLayoutAttributes(forAdditionalInsertedSupplementaryViewOfKind elementKind: String, at indexPath: IndexPath) -> LayoutAttributes?
-    func finalLayoutAttributes(forAdditionalDeletedSupplementaryViewOfKind elementKind: String, at indexPath: IndexPath) -> LayoutAttributes?
+    func layoutAttributes(forAdditionalSupplementaryViewOfKind elementKind: String, at indexPair: IndexPair) -> LayoutAttributes?
+    func initialLayoutAttributes(forAdditionalInsertedSupplementaryViewOfKind elementKind: String, at indexPair: IndexPair) -> LayoutAttributes?
+    func finalLayoutAttributes(forAdditionalDeletedSupplementaryViewOfKind elementKind: String, at indexPair: IndexPair) -> LayoutAttributes?
 }
 
 public extension LayoutModel {
     
-    func transitionAnimation(forItemAt indexPath: IndexPath) -> TransitionAnimation {
+    func transitionAnimation(forItemAt indexPair: IndexPair) -> TransitionAnimation {
         return .opacity
     }
     
-    func transitionAnimation(forSupplementaryViewOfKind elementKind: String, at indexPath: IndexPath) -> TransitionAnimation {
+    func transitionAnimation(forSupplementaryViewOfKind elementKind: String, at indexPair: IndexPair) -> TransitionAnimation {
         return .opacity
     }
     
@@ -42,11 +42,11 @@ public extension LayoutModel {
         return nil
     }
     
-    func initialLayoutAttributes(forInsertedItemAt indexPath: IndexPath) -> LayoutAttributes? {
+    func initialLayoutAttributes(forInsertedItemAt indexPair: IndexPair) -> LayoutAttributes? {
         return nil
     }
     
-    func finalLayoutAttributes(forDeletedItemAt indexPath: IndexPath) -> LayoutAttributes? {
+    func finalLayoutAttributes(forDeletedItemAt indexPair: IndexPair) -> LayoutAttributes? {
         return nil
     }
     
@@ -54,15 +54,15 @@ public extension LayoutModel {
         return nil
     }
     
-    func layoutAttributes(forAdditionalSupplementaryViewOfKind elementKind: String, at indexPath: IndexPath) -> LayoutAttributes? {
+    func layoutAttributes(forAdditionalSupplementaryViewOfKind elementKind: String, at indexPair: IndexPair) -> LayoutAttributes? {
         return nil
     }
     
-    func initialLayoutAttributes(forAdditionalInsertedSupplementaryViewOfKind elementKind: String, at indexPath: IndexPath) -> LayoutAttributes? {
+    func initialLayoutAttributes(forAdditionalInsertedSupplementaryViewOfKind elementKind: String, at indexPair: IndexPair) -> LayoutAttributes? {
         return nil
     }
     
-    func finalLayoutAttributes(forAdditionalDeletedSupplementaryViewOfKind elementKind: String, at indexPath: IndexPath) -> LayoutAttributes? {
+    func finalLayoutAttributes(forAdditionalDeletedSupplementaryViewOfKind elementKind: String, at indexPair: IndexPair) -> LayoutAttributes? {
         return nil
     }
 }

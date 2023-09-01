@@ -21,11 +21,11 @@ public struct DataSourceCounts {
         var lastItemIndex: Int {
             firstItemIndex + itemCount - 1
         }
-        var firstItemIndexPath: IndexPath {
-            return IndexPath(item: 0, section: section)
+        var firstItemIndexPair: IndexPair {
+            return IndexPair(item: 0, section: section)
         }
-        var lastItemIndexPath: IndexPath {
-            return IndexPath(item: itemCount - 1, section: section)
+        var lastItemIndexPair: IndexPair {
+            return IndexPair(item: itemCount - 1, section: section)
         }
     }
     
@@ -63,11 +63,11 @@ public struct DataSourceCounts {
         self.sections = sections
     }
     
-    public func index(for indexPath: IndexPath) -> Int {
-        return self.sections[indexPath.section].firstItemIndex + indexPath.item
+    public func index(for indexPair: IndexPair) -> Int {
+        return self.sections[indexPair.section].firstItemIndex + indexPair.item
     }
     
-    public func indexPath(for index: Int) -> IndexPath {
+    public func indexPair(for index: Int) -> IndexPair {
         assert(index < self.itemsCount)
         
         let section = self.sections.binarySearch { section in
@@ -79,35 +79,35 @@ public struct DataSourceCounts {
             return .equal
         } ?? sections.endIndex - 1
 
-        return IndexPath(item: index - sections[section].firstItemIndex, section: section)
+        return IndexPair(item: index - sections[section].firstItemIndex, section: section)
     }
     
-    public func indexPath(after indexPath: IndexPath) -> IndexPath? {
-        if indexPath.item == self.sections[indexPath.section].itemCount - 1 {
-            return indexPath.section < self.numberOfSections - 1 ? IndexPath(item: 0, section: indexPath.section + 1) : nil
+    public func indexPair(after indexPair: IndexPair) -> IndexPair? {
+        if indexPair.item == self.sections[indexPair.section].itemCount - 1 {
+            return indexPair.section < self.numberOfSections - 1 ? IndexPair(item: 0, section: indexPair.section + 1) : nil
         } else {
-            return IndexPath(item: indexPath.item + 1, section: indexPath.section)
+            return IndexPair(item: indexPair.item + 1, section: indexPair.section)
         }
     }
     
-    public func indexPaths(startIndex: Int, endIndex: Int) -> [IndexPath] {
+    public func indexPairs(startIndex: Int, endIndex: Int) -> [IndexPair] {
         guard self.itemsCount > 0 else { return [] }
         
         let startIndex = startIndex.clamp(min: 0, max: self.itemsCount-1)
         let endIndex = endIndex.clamp(min: 0, max: self.itemsCount)
         guard endIndex > startIndex else { return [] }
         
-        var result = [IndexPath]()
+        var result = [IndexPair]()
         
-        var indexPath = self.indexPath(for: startIndex)
+        var indexPair = self.indexPair(for: startIndex)
         
         // TODO: This could be optimized a lot by reducing the numer of iterations
         for _ in startIndex...endIndex {
-            result.append(indexPath)
-            guard let nextIndexPath = self.indexPath(after: indexPath) else {
+            result.append(indexPair)
+            guard let nextIndexPair = self.indexPair(after: indexPair) else {
                 break
             }
-            indexPath = nextIndexPath
+            indexPair = nextIndexPair
         }
         
         return result
