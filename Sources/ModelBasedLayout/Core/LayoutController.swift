@@ -16,7 +16,6 @@ class LayoutController<ModelType: LayoutModel> {
     private var dataChange: DataBatchUpdate? = nil
     
     private var lastInvalidatedBounds: CGRect? = nil
-    
 
     private(set) var boundsProvider: () -> CGRect
     
@@ -30,7 +29,7 @@ class LayoutController<ModelType: LayoutModel> {
         self.boundsProvider = boundsProvider
     }
     
-    private func layoutModel(_ state: LayoutState) -> ModelType? {
+    internal func layoutModel(_ state: LayoutState) -> ModelType? {
         self.container.layout(state)?.model
     }
     
