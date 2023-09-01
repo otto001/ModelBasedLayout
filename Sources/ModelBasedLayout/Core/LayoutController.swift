@@ -63,7 +63,7 @@ class LayoutController<ModelType: LayoutModel> {
             self.container.pushNewLayout()
         }
         
-        assert(self.stickyController(.afterUpdate)?.frozen != true)
+        assert(self.stickyController(.afterUpdate)?.isBeingTransitionOut != true)
         //self.stickyController(.afterUpdate)?.unfreezeLayoutAttributes()
         
         self.prepareActions = []
@@ -102,7 +102,7 @@ class LayoutController<ModelType: LayoutModel> {
     }
     
     private func usesStickyViews() -> Bool {
-        (self.stickyController(.afterUpdate)?.stickyEdges ?? .none) != .none
+        self.stickyController(.afterUpdate)?.usesStickyViews ?? false
     }
     
     // MARK: Invalidation
@@ -154,6 +154,21 @@ class LayoutController<ModelType: LayoutModel> {
     
     // MARK: Rect
     func layoutAttributesForElements(in rect: CGRect) -> [LayoutAttributes]? {
+        
+        if let items = self.layoutModel(.afterUpdate)?.items(in: rect) {
+            return items.compactMap { item in
+                switch item {
+                case .cell(let indexPath):
+                    return self.layoutAttributesForItem(at: indexPath)
+                case .header(let section):
+                    return self.stickyController(.afterUpdate)?.layoutAttributes(for: section)
+                default:
+                    return nil
+                }
+            }
+        }
+        
+        
         // TODO: Optimize!
         guard let dataSourceCounts = self.dataSourceCounts(.afterUpdate) else { return nil }
         

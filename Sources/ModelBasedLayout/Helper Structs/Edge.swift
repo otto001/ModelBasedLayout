@@ -19,5 +19,7 @@ public struct Edges: OptionSet {
     public static let bottom = Edges(rawValue: 1 << 1)
     public static let left = Edges(rawValue: 1 << 2)
     public static let right = Edges(rawValue: 1 << 3)
+    
     public static let none: Edges = []
+    public static let all: Edges = [.top, .left, bottom, .right]
 }

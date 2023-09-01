@@ -70,8 +70,7 @@ class LayoutContainer<ModelType: LayoutModel> {
         }
         
         let model = modelProvider(dataSourceCounts, geometryInfo)
-        let stickyController = StickyController(stickyEdges: model.pinSectionHeadersToEdges,
-                                                dataSourceCounts: dataSourceCounts,
+        let stickyController = StickyController(dataSourceCounts: dataSourceCounts,
                                                 geometryInfo: geometryInfo,
                                                 boundsProvider: self.boundsProvider) { section in
             model.layoutAttributes(forHeaderOfSection: section)
