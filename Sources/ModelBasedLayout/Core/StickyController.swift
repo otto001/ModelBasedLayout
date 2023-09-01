@@ -87,9 +87,9 @@ class StickyController {
     }
     
     private func stickify(_ attrs: LayoutAttributes) -> LayoutAttributes {
-        guard attrs.isSticky, let stickyAttrs = attrs.stickyAttributes else { return attrs }
-        guard attrs.frame.width > 0 && attrs.frame.height > 0 else { return attrs }
+        guard attrs.isSticky && attrs.frame.width > 0 && attrs.frame.height > 0 else { return attrs }
         
+        let stickyAttrs = attrs.stickyAttributes!
         self.updateVisibleBoundsIfNeeded()
         
         var newAttrs = attrs
@@ -147,8 +147,6 @@ class StickyController {
             }
             
         }
-        
-        
     }
 }
 

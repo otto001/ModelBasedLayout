@@ -177,7 +177,7 @@ class LayoutController<ModelType: LayoutModel> {
             if let indexPairBeforeUpdate = dataChange.indexPairBeforeUpdate(for: indexPair) {
                 return self.layoutModel(.beforeUpdate)!.layoutAttributes(forItemAt: indexPairBeforeUpdate)?.withIndexPair(indexPair)
             } else {
-                switch (self.layoutModel(.afterUpdate)?.transitionAnimation(forItemAt: indexPair) ?? .none) {
+                switch (self.layoutModel(.afterUpdate)?.transitionAnimation(for: .cell(indexPair)) ?? .none) {
                 case .none:
                     return self.layoutModel(.afterUpdate)?.layoutAttributes(forItemAt: indexPair)
                 case .opacity:
@@ -205,7 +205,7 @@ class LayoutController<ModelType: LayoutModel> {
             if dataChange.indexPairAfterUpdate(for: indexPair) != nil {
                 return nil
             } else {
-                switch (self.layoutModel(.beforeUpdate)?.transitionAnimation(forItemAt: indexPair) ?? .none) {
+                switch (self.layoutModel(.beforeUpdate)?.transitionAnimation(for: .cell(indexPair)) ?? .none) {
                 case .none:
                     return self.layoutModel(.beforeUpdate)?.layoutAttributes(forItemAt: indexPair)
                     
@@ -236,7 +236,7 @@ class LayoutController<ModelType: LayoutModel> {
                 return self.stickyController(.beforeUpdate)?.layoutAttributes(forItemOfKind: .init(supplementaryOfKind: elementKind), at: indexPairBeforeUpdate)?.withIndexPair(indexPair)
                 
             } else {
-                switch (self.layoutModel(.afterUpdate)?.transitionAnimation(forSupplementaryViewOfKind: elementKind, at: indexPair) ?? .none) {
+                switch (self.layoutModel(.afterUpdate)?.transitionAnimation(for: .init(supplementaryOfKind: elementKind, indexPair: indexPair)) ?? .none) {
                 case .none:
                     return self.stickyController(.afterUpdate)?.layoutAttributes(forItemOfKind: .init(supplementaryOfKind: elementKind), at: indexPair)
                 case .opacity:
@@ -263,9 +263,11 @@ class LayoutController<ModelType: LayoutModel> {
             if dataChange.indexPairAfterUpdate(for: indexPair) != nil {
                 return nil
             } else {
-                switch (self.layoutModel(.beforeUpdate)?.transitionAnimation(forSupplementaryViewOfKind: elementKind, at: indexPair) ?? .none)  {
+                switch (self.layoutModel(.beforeUpdate)?.transitionAnimation(for: .init(supplementaryOfKind: elementKind, indexPair: indexPair)) ?? .none)  {
                 case .none:
-                    return self.stickyController(.beforeUpdate)?.layoutAttributes(forItemOfKind: .init(supplementaryOfKind: elementKind), at: indexPair)
+                    var layoutAttrs = self.stickyController(.beforeUpdate)?.layoutAttributes(forItemOfKind: .init(supplementaryOfKind: elementKind), at: indexPair)
+                    layoutAttrs?.zIndex += 1
+                    return layoutAttrs
                 case .opacity:
                     var layoutAttrs = self.stickyController(.beforeUpdate)?.layoutAttributes(forItemOfKind: .init(supplementaryOfKind: elementKind), at: indexPair)
                     layoutAttrs?.alpha = 0

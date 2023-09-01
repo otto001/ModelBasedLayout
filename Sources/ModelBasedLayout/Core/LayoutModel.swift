@@ -12,8 +12,7 @@ public protocol LayoutModel {
     
     var contentSize: CGSize { get }
     
-    func transitionAnimation(forItemAt indexPair: IndexPair) -> TransitionAnimation
-    func transitionAnimation(forSupplementaryViewOfKind elementKind: String, at indexPair: IndexPair) -> TransitionAnimation
+    func transitionAnimation(for item: Item) -> TransitionAnimation
     
     func items(in rect: CGRect) -> [Item]
     
@@ -31,11 +30,7 @@ public protocol LayoutModel {
 
 public extension LayoutModel {
     
-    func transitionAnimation(forItemAt indexPair: IndexPair) -> TransitionAnimation {
-        return .opacity
-    }
-    
-    func transitionAnimation(forSupplementaryViewOfKind elementKind: String, at indexPair: IndexPair) -> TransitionAnimation {
+    func transitionAnimation(for item: Item) -> TransitionAnimation {
         return .opacity
     }
     
