@@ -11,6 +11,7 @@ import Foundation
 public enum Item {
     case cell(IndexPair)
     case header(section: Int)
+    case footer(section: Int)
     case additionalSupplementaryView(elementKind: String, indexPair: IndexPair)
     //case footer(section: Int)
 }

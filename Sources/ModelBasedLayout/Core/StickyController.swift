@@ -18,6 +18,7 @@ class StickyController {
     private var layoutAttributesProvider: (_ elementKind: ElementKind, _ indexPair: IndexPair) -> LayoutAttributes?
     
     private var cachedAttributes: [ItemKey: LayoutAttributes] = [:]
+    private var invalidationMap: ChunkedRectMap<ItemKey>
     
     private var bounds: CGRect = .zero
     private var safeAreaInsets: UIEdgeInsets
@@ -37,6 +38,7 @@ class StickyController {
         self.layoutAttributesProvider = layoutAttributesProvider
         
         self.safeAreaInsets = geometryInfo.safeAreaInsets
+        self.invalidationMap = .init(chunkSize: boundsProvider().size)
         self.updateVisibleBoundsIfNeeded()
     }
     
@@ -73,9 +75,13 @@ class StickyController {
         }
         
         let attrs = layoutAttributesProvider(elementKind, indexPair)
-        self.cachedAttributes[key] = attrs
-        if attrs?.isSticky == true {
-            self.usesStickyViews = true
+        if let attrs = attrs {
+            self.cachedAttributes[key] = attrs
+            
+            if attrs.isSticky {
+                self.usesStickyViews = true
+                self.invalidationMap.insert(key, with: attrs.extendedStickyBounds!)
+            }
         }
         return attrs
     }
@@ -117,26 +123,23 @@ class StickyController {
         self.updateVisibleBoundsIfNeeded()
         return self.baseLayoutAttributes(forItemOfKind: elementKind, at: indexPair).map {self.stickify($0)}
     }
-    
-    
-    private func layoutAttributes(in rect: CGRect) -> [LayoutAttributes] {
-        self.updateVisibleBoundsIfNeeded()
-        return cachedAttributes.values.filter { $0.isVisible(in: rect) }
-    }
 
     func configureInvalidationContext(forBoundsChange newBounds: CGRect, with context: UICollectionViewLayoutInvalidationContext) {
         let rect = boundsProvider().union(newBounds)
         self.updateVisibleBoundsIfNeeded()
         
-        let result = cachedAttributes.values.filter {
-            guard $0.isSticky else { return false }
-            return $0.isVisible(in: rect) && !$0.extendedStickyBounds!.isWithin(self.bounds(for: $0.stickyAttributes!), edges: $0.stickyAttributes!.stickyEdges)
+        let result = self.invalidationMap.query(rect).map {
+            self.cachedAttributes[$0]!
+        }.filter {
+            return !$0.extendedStickyBounds!.isWithin(self.bounds(for: $0.stickyAttributes!), edges: $0.stickyAttributes!.stickyEdges)
         }
         
         for attrs in result {
             switch attrs.elementKind {
             case .header:
                 context.invalidateSupplementaryElements(ofKind: UICollectionView.elementKindSectionHeader, at: [attrs.indexPair.indexPath])
+            case .footer:
+                context.invalidateSupplementaryElements(ofKind: UICollectionView.elementKindSectionFooter, at: [attrs.indexPair.indexPath])
             case .additionalSupplementaryView(let elementKind):
                 context.invalidateSupplementaryElements(ofKind: elementKind, at: [attrs.indexPair.indexPath])
             default:

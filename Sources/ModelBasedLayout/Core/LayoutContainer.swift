@@ -76,6 +76,8 @@ class LayoutContainer<ModelType: LayoutModel> {
             switch elementKind {
             case .header:
                 return model.layoutAttributes(forHeaderOfSection: indexPair.section)
+            case .footer:
+                return model.layoutAttributes(forFooterOfSection: indexPair.section)
             case .additionalSupplementaryView(let elementKind):
                 return model.layoutAttributes(forAdditionalSupplementaryViewOfKind: elementKind, at: indexPair)
             default:
@@ -83,7 +85,10 @@ class LayoutContainer<ModelType: LayoutModel> {
             }
         }
         
-        self.cachedLayout = Layout(geometryInfo: geometryInfo, dataSourceCounts: dataSourceCounts, stickyController: stickyController, model: model)
+        self.cachedLayout = Layout(geometryInfo: geometryInfo,
+                                   dataSourceCounts: dataSourceCounts,
+                                   stickyController: stickyController,
+                                   model: model)
         
         return self.cachedLayout!
     }

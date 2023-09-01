@@ -11,6 +11,7 @@ import UIKit
 public enum ElementKind: Equatable, Hashable {
     case cell
     case header
+    case footer
     case additionalSupplementaryView(String)
     case decorativeView(String)
     
@@ -19,16 +20,22 @@ public enum ElementKind: Equatable, Hashable {
         case .cell:
             self = .cell
         case .supplementaryView:
-            switch collectionViewLayoutAttributes.representedElementKind! {
-            case UICollectionView.elementKindSectionHeader:
-                self = .header
-            default:
-                self = .additionalSupplementaryView(collectionViewLayoutAttributes.representedElementKind!)
-            }
+            self = .init(supplementaryOfKind: collectionViewLayoutAttributes.representedElementKind!)
         case .decorationView:
             self = .decorativeView(collectionViewLayoutAttributes.representedElementKind!)
         @unknown default:
             fatalError("Unknown representedElementCategory")
+        }
+    }
+    
+    init(supplementaryOfKind elementKind: String) {
+        switch elementKind {
+        case UICollectionView.elementKindSectionHeader:
+            self = .header
+        case UICollectionView.elementKindSectionFooter:
+            self = .footer
+        default:
+            self = .additionalSupplementaryView(elementKind)
         }
     }
     
@@ -37,6 +44,8 @@ public enum ElementKind: Equatable, Hashable {
         case .cell:
             return .cell
         case .header:
+            return .supplementaryView
+        case .footer:
             return .supplementaryView
         case .additionalSupplementaryView:
             return .supplementaryView
@@ -51,6 +60,8 @@ public enum ElementKind: Equatable, Hashable {
             return nil
         case .header:
             return UICollectionView.elementKindSectionHeader
+        case .footer:
+            return UICollectionView.elementKindSectionFooter
         case .additionalSupplementaryView(let string):
             return string
         case .decorativeView(let string):

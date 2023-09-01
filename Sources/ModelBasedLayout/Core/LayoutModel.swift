@@ -15,13 +15,14 @@ public protocol LayoutModel {
     func transitionAnimation(forItemAt indexPair: IndexPair) -> TransitionAnimation
     func transitionAnimation(forSupplementaryViewOfKind elementKind: String, at indexPair: IndexPair) -> TransitionAnimation
     
-    func items(in rect: CGRect) -> [Item]?
+    func items(in rect: CGRect) -> [Item]
     
     func layoutAttributes(forItemAt indexPair: IndexPair) -> LayoutAttributes?
     func initialLayoutAttributes(forInsertedItemAt indexPair: IndexPair) -> LayoutAttributes?
     func finalLayoutAttributes(forDeletedItemAt indexPair: IndexPair) -> LayoutAttributes?
     
     func layoutAttributes(forHeaderOfSection section: Int) -> LayoutAttributes?
+    func layoutAttributes(forFooterOfSection section: Int) -> LayoutAttributes?
     
     func layoutAttributes(forAdditionalSupplementaryViewOfKind elementKind: String, at indexPair: IndexPair) -> LayoutAttributes?
     func initialLayoutAttributes(forAdditionalInsertedSupplementaryViewOfKind elementKind: String, at indexPair: IndexPair) -> LayoutAttributes?
@@ -38,10 +39,6 @@ public extension LayoutModel {
         return .opacity
     }
     
-    func items(in rect: CGRect) -> [Item]? {
-        return nil
-    }
-    
     func initialLayoutAttributes(forInsertedItemAt indexPair: IndexPair) -> LayoutAttributes? {
         return nil
     }
@@ -51,6 +48,10 @@ public extension LayoutModel {
     }
     
     func layoutAttributes(forHeaderOfSection section: Int) -> LayoutAttributes? {
+        return nil
+    }
+    
+    func layoutAttributes(forFooterOfSection section: Int) -> LayoutAttributes? {
         return nil
     }
     

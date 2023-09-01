@@ -101,6 +101,8 @@ public struct LayoutAttributes {
             collectionViewLayoutAttributes = UICollectionViewLayoutAttributes(forCellWith: indexPair.indexPath)
         case .header:
             collectionViewLayoutAttributes = UICollectionViewLayoutAttributes(forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader, with: indexPair.indexPath)
+        case .footer:
+            collectionViewLayoutAttributes = UICollectionViewLayoutAttributes(forSupplementaryViewOfKind: UICollectionView.elementKindSectionFooter, with: indexPair.indexPath)
         case .additionalSupplementaryView(let elementKind):
             collectionViewLayoutAttributes = UICollectionViewLayoutAttributes(forSupplementaryViewOfKind: elementKind, with: indexPair.indexPath)
         case .decorativeView(let elementKind):
