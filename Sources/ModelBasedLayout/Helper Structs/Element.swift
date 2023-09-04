@@ -1,5 +1,5 @@
 //
-//  Item.swift
+//  Element.swift
 //  
 //
 //  Created by Matteo Ludwig on 26.08.23.
@@ -8,11 +8,12 @@
 import UIKit
 
 
-public enum Item {
+public enum Element {
     case cell(IndexPair)
     case header(section: Int)
     case footer(section: Int)
     case additionalSupplementaryView(elementKind: String, indexPair: IndexPair)
+    
     
     init(supplementaryOfKind elementKind: String, indexPair: IndexPair) {
         switch elementKind {

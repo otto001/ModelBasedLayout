@@ -153,7 +153,7 @@ class LayoutController<ModelType: LayoutModel> {
     // MARK: Rect
     func layoutAttributesForElements(in rect: CGRect) -> [LayoutAttributes]? {
         let items = self.layoutModel(.afterUpdate)!.items(in: rect)
-        return items.compactMap { (item: Item) -> LayoutAttributes? in
+        return items.compactMap { (item: Element) -> LayoutAttributes? in
             switch item {
             case .cell(let indexPair):
                 return self.layoutAttributesForItem(at: indexPair)
@@ -174,7 +174,7 @@ class LayoutController<ModelType: LayoutModel> {
     func initialLayoutAttributesForAppearingItem(at indexPair: IndexPair) -> LayoutAttributes? {
         
         if let dataChange = self.dataChange {
-            if let indexPairBeforeUpdate = dataChange.indexPairBeforeUpdate(for: indexPair) {
+            if let indexPairBeforeUpdate = dataChange.indexPairBeforeUpdate(for: indexPair), !dataChange.willReload(indexPair, state: .afterUpdate){
                 return self.layoutModel(.beforeUpdate)!.layoutAttributes(forItemAt: indexPairBeforeUpdate)?.withIndexPair(indexPair)
             } else {
                 switch (self.layoutModel(.afterUpdate)?.transitionAnimation(for: .cell(indexPair)) ?? .none) {
@@ -232,7 +232,7 @@ class LayoutController<ModelType: LayoutModel> {
     func initialLayoutAttributesForAppearingSupplementaryElement(ofKind elementKind: String, at indexPair: IndexPair) -> LayoutAttributes? {
         
         if let dataChange = self.dataChange {
-            if let indexPairBeforeUpdate = dataChange.indexPairBeforeUpdate(for: indexPair) {
+            if let indexPairBeforeUpdate = dataChange.indexPairBeforeUpdate(for: indexPair), !dataChange.willReload(indexPair, state: .afterUpdate) {
                 return self.stickyController(.beforeUpdate)?.layoutAttributes(forItemOfKind: .init(supplementaryOfKind: elementKind), at: indexPairBeforeUpdate)?.withIndexPair(indexPair)
                 
             } else {

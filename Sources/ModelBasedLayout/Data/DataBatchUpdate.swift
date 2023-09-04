@@ -16,6 +16,9 @@ struct DataBatchUpdate {
     
     private var sectionIndiciesAfterUpdate: [Int: Int?] = [:]
     
+    private var itemReloads: Set<IndexPair> = .init()
+    private var sectionReloads: Set<Int> = .init()
+    
     private var dataSourceCounts: DataSourceCounts
     
     init(dataSourceCounts: DataSourceCounts, updateItems: [DataUpdate]) {
@@ -35,22 +38,44 @@ struct DataBatchUpdate {
     }
     
     func indexPairBeforeUpdate(for indexPair: IndexPair) -> IndexPair? {
-        //guard sectionIndiciesAfterUpdate[indexPair.section] != nil else { return nil }
         return indexPairsBeforeUpdate[indexPair]
     }
     
+    func willReload(_ indexPair: IndexPair, state: LayoutState) -> Bool {
+        var indexPair = indexPair
+        if state == .beforeUpdate {
+            guard let indexPairBefore = self.indexPairBeforeUpdate(for: indexPair) else { return false }
+            indexPair = indexPairBefore
+        }
+        return self.sectionReloads.contains(indexPair.section) || self.itemReloads.contains(indexPair)
+    }
     
-    private mutating func addUpdateItems(_ dataUpdates: [DataUpdate]) {
+    private mutating func processReloads(_ dataUpdates: inout [DataUpdate]) {
+        var result: [DataUpdate] = []
         
+        for dataUpdate in dataUpdates {
+            switch dataUpdate {
+            case .reloadSection(let sectionIndexBeforeUpdate, _):
+                self.sectionReloads.insert(sectionIndexBeforeUpdate)
+            case .reloadItem(let indexPairBeforeUpdate, _):
+                self.itemReloads.insert(indexPairBeforeUpdate)
+            default:
+                result.append(dataUpdate)
+            }
+        }
         
-        let dataUpdates = dataUpdates.sorted()
-        
-
+        dataUpdates = result
+    }
+    
+    private func processSectionUpdates(_ dataUpdates: inout [DataUpdate]) -> ([Int], [Int]) {
         var deletedSections = [Int]()
         var insertedSections = [Int]()
         
         var index: Int = 0
+        var stop: Bool = false
         for dataUpdate in dataUpdates {
+            guard !stop else { break }
+            
             switch dataUpdate {
             case .deleteSection(let sectionIndex):
                 deletedSections.append(sectionIndex)
@@ -62,22 +87,39 @@ struct DataBatchUpdate {
                 index += 1
                 
             default:
+                stop = true
                 break
             }
         }
+        
+        dataUpdates = Array(dataUpdates[index...])
+        return (deletedSections, insertedSections)
+    }
+    
+    private mutating func addUpdateItems(_ dataUpdates: [DataUpdate]) {
+        
+        var dataUpdates = dataUpdates
+        
+        self.processReloads(&dataUpdates)
+        
+        dataUpdates.sort()
+        
+        let (deletedSections, insertedSections) = self.processSectionUpdates(&dataUpdates)
+
+       
         
         var deletedItemsPerSection: [[Int]] = Array(repeating: [], count: dataSourceCounts.numberOfSections + insertedSections.count)
         var insertedItemsPerSection: [[Int]] = Array(repeating: [], count: dataSourceCounts.numberOfSections + insertedSections.count)
         
         
-        for dataUpdate in dataUpdates[index...] {
+        for dataUpdate in dataUpdates {
             switch dataUpdate {
             case .deleteItem(let indexPair):
                 deletedItemsPerSection[indexPair.section].append(indexPair.item)
 
             case .insertItem(let indexPair):
                 insertedItemsPerSection[indexPair.section].append(indexPair.item)
-
+            
             default:
                 fatalError("Meh")
             }

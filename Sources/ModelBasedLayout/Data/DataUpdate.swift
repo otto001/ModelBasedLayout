@@ -24,11 +24,12 @@ enum DataUpdate: Hashable, Comparable {
             return 5
         case .reloadItem:
             return 4
-        case .reloadSection:
-            return 3
+     
         case .deleteItem:
+            return 3
+        
+        case .reloadSection:
             return 2
-            
         case .insertSection:
             return 1
         case .deleteSection:

@@ -20,209 +20,209 @@ final class DataBatchUpdateTests: XCTestCase {
 
     func testDeleteItemOnly() throws {
         
-        let layoutData = ModelBasedLayoutData(sections: [8, 3], collectionViewSize: .zero)
+        let dataSourceCounts = DataSourceCounts(sections: [8, 3])
 
         let updates: [DataUpdate] = [
-            .deleteItem(indexPath: IndexPath(item: 3, section: 0)),
-            .deleteItem(indexPath: IndexPath(item: 4, section: 0)),
-            .deleteItem(indexPath: IndexPath(item: 6, section: 0)),
+            .deleteItem(indexPair: IndexPair(item: 3, section: 0)),
+            .deleteItem(indexPair: IndexPair(item: 4, section: 0)),
+            .deleteItem(indexPair: IndexPair(item: 6, section: 0)),
             
-            .deleteItem(indexPath: IndexPath(item: 0, section: 1)),
-            .deleteItem(indexPath: IndexPath(item: 2, section: 1)),
+            .deleteItem(indexPair: IndexPair(item: 0, section: 1)),
+            .deleteItem(indexPair: IndexPair(item: 2, section: 1)),
         ]
-        let changes = DataBatchUpdate(layoutData: layoutData, updateItems: updates)
-        let results: [IndexPath: IndexPath?] = [
-            IndexPath(item: 0, section: 0): IndexPath(item: 0, section: 0),
-            IndexPath(item: 1, section: 0): IndexPath(item: 1, section: 0),
-            IndexPath(item: 2, section: 0): IndexPath(item: 2, section: 0),
-            IndexPath(item: 3, section: 0): nil,
-            IndexPath(item: 4, section: 0): nil,
-            IndexPath(item: 5, section: 0): IndexPath(item: 3, section: 0),
-            IndexPath(item: 6, section: 0): nil,
-            IndexPath(item: 7, section: 0): IndexPath(item: 4, section: 0),
+        let changes = DataBatchUpdate(dataSourceCounts: dataSourceCounts, updateItems: updates)
+        let results: [IndexPair: IndexPair?] = [
+            IndexPair(item: 0, section: 0): IndexPair(item: 0, section: 0),
+            IndexPair(item: 1, section: 0): IndexPair(item: 1, section: 0),
+            IndexPair(item: 2, section: 0): IndexPair(item: 2, section: 0),
+            IndexPair(item: 3, section: 0): nil,
+            IndexPair(item: 4, section: 0): nil,
+            IndexPair(item: 5, section: 0): IndexPair(item: 3, section: 0),
+            IndexPair(item: 6, section: 0): nil,
+            IndexPair(item: 7, section: 0): IndexPair(item: 4, section: 0),
             
-            IndexPath(item: 0, section: 1): nil,
-            IndexPath(item: 1, section: 1): IndexPath(item: 0, section: 1),
-            IndexPath(item: 2, section: 1): nil,
+            IndexPair(item: 0, section: 1): nil,
+            IndexPair(item: 1, section: 1): IndexPair(item: 0, section: 1),
+            IndexPair(item: 2, section: 1): nil,
         ]
         
-        for indexPath in layoutData.indexPaths(startIndex: 0, endIndex: layoutData.itemsCount) {
-            XCTAssertEqual(changes.indexPathAfterUpdate(for: indexPath), results[indexPath])
+        for indexPair in dataSourceCounts.indexPairs(startIndex: 0, endIndex: dataSourceCounts.itemsCount) {
+            XCTAssertEqual(changes.indexPairAfterUpdate(for: indexPair), results[indexPair])
         }
         
     }
     
     func testInsertItemOnly() throws {
         
-        let layoutData = ModelBasedLayoutData(sections: [8, 2], collectionViewSize: .zero)
+        let dataSourceCounts = DataSourceCounts(sections: [8, 2])
 
         let updates: [DataUpdate] = [
-            .insertItem(indexPath: IndexPath(item: 3, section: 0)),
-            .insertItem(indexPath: IndexPath(item: 4, section: 0)),
-            .insertItem(indexPath: IndexPath(item: 6, section: 0)),
+            .insertItem(indexPair: IndexPair(item: 3, section: 0)),
+            .insertItem(indexPair: IndexPair(item: 4, section: 0)),
+            .insertItem(indexPair: IndexPair(item: 6, section: 0)),
             
-            .insertItem(indexPath: IndexPath(item: 0, section: 1)),
-            .insertItem(indexPath: IndexPath(item: 3, section: 1)),
+            .insertItem(indexPair: IndexPair(item: 0, section: 1)),
+            .insertItem(indexPair: IndexPair(item: 3, section: 1)),
         ]
-        let changes = DataBatchUpdate(layoutData: layoutData, updateItems: updates)
-        let results: [IndexPath: IndexPath?] = [
-            IndexPath(item: 0, section: 0): IndexPath(item: 0, section: 0),
-            IndexPath(item: 1, section: 0): IndexPath(item: 1, section: 0),
-            IndexPath(item: 2, section: 0): IndexPath(item: 2, section: 0),
-            IndexPath(item: 3, section: 0): IndexPath(item: 5, section: 0),
-            IndexPath(item: 4, section: 0): IndexPath(item: 7, section: 0),
-            IndexPath(item: 5, section: 0): IndexPath(item: 8, section: 0),
-            IndexPath(item: 6, section: 0): IndexPath(item: 9, section: 0),
-            IndexPath(item: 7, section: 0): IndexPath(item: 10, section: 0),
+        let changes = DataBatchUpdate(dataSourceCounts: dataSourceCounts, updateItems: updates)
+        let results: [IndexPair: IndexPair?] = [
+            IndexPair(item: 0, section: 0): IndexPair(item: 0, section: 0),
+            IndexPair(item: 1, section: 0): IndexPair(item: 1, section: 0),
+            IndexPair(item: 2, section: 0): IndexPair(item: 2, section: 0),
+            IndexPair(item: 3, section: 0): IndexPair(item: 5, section: 0),
+            IndexPair(item: 4, section: 0): IndexPair(item: 7, section: 0),
+            IndexPair(item: 5, section: 0): IndexPair(item: 8, section: 0),
+            IndexPair(item: 6, section: 0): IndexPair(item: 9, section: 0),
+            IndexPair(item: 7, section: 0): IndexPair(item: 10, section: 0),
             
-            IndexPath(item: 0, section: 1): IndexPath(item: 1, section: 1),
-            IndexPath(item: 1, section: 1): IndexPath(item: 2, section: 1),
+            IndexPair(item: 0, section: 1): IndexPair(item: 1, section: 1),
+            IndexPair(item: 1, section: 1): IndexPair(item: 2, section: 1),
         ]
         
-        for indexPath in layoutData.indexPaths(startIndex: 0, endIndex: layoutData.itemsCount) {
-            XCTAssertEqual(changes.indexPathAfterUpdate(for: indexPath), results[indexPath])
+        for indexPair in dataSourceCounts.indexPairs(startIndex: 0, endIndex: dataSourceCounts.itemsCount) {
+            XCTAssertEqual(changes.indexPairAfterUpdate(for: indexPair), results[indexPair])
         }
     }
     
     func testDeleteSection() throws {
         
-        let layoutData = ModelBasedLayoutData(sections: [8, 3, 2], collectionViewSize: .zero)
+        let dataSourceCounts = DataSourceCounts(sections: [8, 3, 2])
 
         let updates: [DataUpdate] = [
-            .deleteItem(indexPath: IndexPath(item: 3, section: 0)),
-            .deleteItem(indexPath: IndexPath(item: 4, section: 0)),
-            .deleteItem(indexPath: IndexPath(item: 6, section: 0)),
+            .deleteItem(indexPair: IndexPair(item: 3, section: 0)),
+            .deleteItem(indexPair: IndexPair(item: 4, section: 0)),
+            .deleteItem(indexPair: IndexPair(item: 6, section: 0)),
             
             .deleteSection(sectionIndex: 1),
-            .deleteItem(indexPath: IndexPath(item: 0, section: 1)),
-            .deleteItem(indexPath: IndexPath(item: 1, section: 1)),
-            .deleteItem(indexPath: IndexPath(item: 2, section: 1)),
+            .deleteItem(indexPair: IndexPair(item: 0, section: 1)),
+            .deleteItem(indexPair: IndexPair(item: 1, section: 1)),
+            .deleteItem(indexPair: IndexPair(item: 2, section: 1)),
         ]
-        let changes = DataBatchUpdate(layoutData: layoutData, updateItems: updates)
-        let results: [IndexPath: IndexPath?] = [
-            IndexPath(item: 0, section: 0): IndexPath(item: 0, section: 0),
-            IndexPath(item: 1, section: 0): IndexPath(item: 1, section: 0),
-            IndexPath(item: 2, section: 0): IndexPath(item: 2, section: 0),
-            IndexPath(item: 3, section: 0): nil,
-            IndexPath(item: 4, section: 0): nil,
-            IndexPath(item: 5, section: 0): IndexPath(item: 3, section: 0),
-            IndexPath(item: 6, section: 0): nil,
-            IndexPath(item: 7, section: 0): IndexPath(item: 4, section: 0),
+        let changes = DataBatchUpdate(dataSourceCounts: dataSourceCounts, updateItems: updates)
+        let results: [IndexPair: IndexPair?] = [
+            IndexPair(item: 0, section: 0): IndexPair(item: 0, section: 0),
+            IndexPair(item: 1, section: 0): IndexPair(item: 1, section: 0),
+            IndexPair(item: 2, section: 0): IndexPair(item: 2, section: 0),
+            IndexPair(item: 3, section: 0): nil,
+            IndexPair(item: 4, section: 0): nil,
+            IndexPair(item: 5, section: 0): IndexPair(item: 3, section: 0),
+            IndexPair(item: 6, section: 0): nil,
+            IndexPair(item: 7, section: 0): IndexPair(item: 4, section: 0),
             
-            IndexPath(item: 0, section: 1): nil,
-            IndexPath(item: 1, section: 1): nil,
-            IndexPath(item: 2, section: 1): nil,
+            IndexPair(item: 0, section: 1): nil,
+            IndexPair(item: 1, section: 1): nil,
+            IndexPair(item: 2, section: 1): nil,
             
-            IndexPath(item: 0, section: 2): IndexPath(item: 0, section: 1),
-            IndexPath(item: 1, section: 2): IndexPath(item: 1, section: 1),
+            IndexPair(item: 0, section: 2): IndexPair(item: 0, section: 1),
+            IndexPair(item: 1, section: 2): IndexPair(item: 1, section: 1),
         ]
         
-        for indexPath in layoutData.indexPaths(startIndex: 0, endIndex: layoutData.itemsCount) {
-            XCTAssertEqual(changes.indexPathAfterUpdate(for: indexPath), results[indexPath])
+        for indexPair in dataSourceCounts.indexPairs(startIndex: 0, endIndex: dataSourceCounts.itemsCount) {
+            XCTAssertEqual(changes.indexPairAfterUpdate(for: indexPair), results[indexPair])
         }
         
     }
     
     func testDeleteSectionOnly() throws {
         
-        let layoutData = ModelBasedLayoutData(sections: [8, 3, 2], collectionViewSize: .zero)
+        let dataSourceCounts = DataSourceCounts(sections: [8, 3, 2])
 
         let updates: [DataUpdate] = [
-            .deleteItem(indexPath: IndexPath(item: 3, section: 0)),
-            .deleteItem(indexPath: IndexPath(item: 4, section: 0)),
-            .deleteItem(indexPath: IndexPath(item: 6, section: 0)),
+            .deleteItem(indexPair: IndexPair(item: 3, section: 0)),
+            .deleteItem(indexPair: IndexPair(item: 4, section: 0)),
+            .deleteItem(indexPair: IndexPair(item: 6, section: 0)),
             
             .deleteSection(sectionIndex: 1),
         ]
-        let changes = DataBatchUpdate(layoutData: layoutData, updateItems: updates)
-        let results: [IndexPath: IndexPath?] = [
-            IndexPath(item: 0, section: 0): IndexPath(item: 0, section: 0),
-            IndexPath(item: 1, section: 0): IndexPath(item: 1, section: 0),
-            IndexPath(item: 2, section: 0): IndexPath(item: 2, section: 0),
-            IndexPath(item: 3, section: 0): nil,
-            IndexPath(item: 4, section: 0): nil,
-            IndexPath(item: 5, section: 0): IndexPath(item: 3, section: 0),
-            IndexPath(item: 6, section: 0): nil,
-            IndexPath(item: 7, section: 0): IndexPath(item: 4, section: 0),
+        let changes = DataBatchUpdate(dataSourceCounts: dataSourceCounts, updateItems: updates)
+        let results: [IndexPair: IndexPair?] = [
+            IndexPair(item: 0, section: 0): IndexPair(item: 0, section: 0),
+            IndexPair(item: 1, section: 0): IndexPair(item: 1, section: 0),
+            IndexPair(item: 2, section: 0): IndexPair(item: 2, section: 0),
+            IndexPair(item: 3, section: 0): nil,
+            IndexPair(item: 4, section: 0): nil,
+            IndexPair(item: 5, section: 0): IndexPair(item: 3, section: 0),
+            IndexPair(item: 6, section: 0): nil,
+            IndexPair(item: 7, section: 0): IndexPair(item: 4, section: 0),
             
-            IndexPath(item: 0, section: 1): nil,
-            IndexPath(item: 1, section: 1): nil,
-            IndexPath(item: 2, section: 1): nil,
+            IndexPair(item: 0, section: 1): nil,
+            IndexPair(item: 1, section: 1): nil,
+            IndexPair(item: 2, section: 1): nil,
             
-            IndexPath(item: 0, section: 2): IndexPath(item: 0, section: 1),
-            IndexPath(item: 1, section: 2): IndexPath(item: 1, section: 1),
+            IndexPair(item: 0, section: 2): IndexPair(item: 0, section: 1),
+            IndexPair(item: 1, section: 2): IndexPair(item: 1, section: 1),
         ]
         
-        for indexPath in layoutData.indexPaths(startIndex: 0, endIndex: layoutData.itemsCount) {
-            XCTAssertEqual(changes.indexPathAfterUpdate(for: indexPath), results[indexPath])
+        for indexPair in dataSourceCounts.indexPairs(startIndex: 0, endIndex: dataSourceCounts.itemsCount) {
+            XCTAssertEqual(changes.indexPairAfterUpdate(for: indexPair), results[indexPair])
         }
         
     }
     
     func testInsertSection() throws {
         
-        let layoutData = ModelBasedLayoutData(sections: [3, 3], collectionViewSize: .zero)
+        let dataSourceCounts = DataSourceCounts(sections: [3, 3])
 
         let updates: [DataUpdate] = [
             .insertSection(sectionIndex: 1),
-            .insertItem(indexPath: IndexPath(item: 0, section: 1)),
-            .insertItem(indexPath: IndexPath(item: 1, section: 1)),
-            .insertItem(indexPath: IndexPath(item: 2, section: 1)),
+            .insertItem(indexPair: IndexPair(item: 0, section: 1)),
+            .insertItem(indexPair: IndexPair(item: 1, section: 1)),
+            .insertItem(indexPair: IndexPair(item: 2, section: 1)),
         ]
-        let changes = DataBatchUpdate(layoutData: layoutData, updateItems: updates)
-        let results: [IndexPath: IndexPath?] = [
-            IndexPath(item: 0, section: 0): IndexPath(item: 0, section: 0),
-            IndexPath(item: 1, section: 0): IndexPath(item: 1, section: 0),
-            IndexPath(item: 2, section: 0): IndexPath(item: 2, section: 0),
+        let changes = DataBatchUpdate(dataSourceCounts: dataSourceCounts, updateItems: updates)
+        let results: [IndexPair: IndexPair?] = [
+            IndexPair(item: 0, section: 0): IndexPair(item: 0, section: 0),
+            IndexPair(item: 1, section: 0): IndexPair(item: 1, section: 0),
+            IndexPair(item: 2, section: 0): IndexPair(item: 2, section: 0),
             
-            IndexPath(item: 0, section: 1): IndexPath(item: 0, section: 2),
-            IndexPath(item: 1, section: 1): IndexPath(item: 1, section: 2),
-            IndexPath(item: 2, section: 1): IndexPath(item: 2, section: 2),
+            IndexPair(item: 0, section: 1): IndexPair(item: 0, section: 2),
+            IndexPair(item: 1, section: 1): IndexPair(item: 1, section: 2),
+            IndexPair(item: 2, section: 1): IndexPair(item: 2, section: 2),
         ]
         
-        for indexPath in layoutData.indexPaths(startIndex: 0, endIndex: layoutData.itemsCount) {
-            XCTAssertEqual(changes.indexPathAfterUpdate(for: indexPath), results[indexPath])
+        for indexPair in dataSourceCounts.indexPairs(startIndex: 0, endIndex: dataSourceCounts.itemsCount) {
+            XCTAssertEqual(changes.indexPairAfterUpdate(for: indexPair), results[indexPair])
         }
         
     }
     
     func testInsertDeleteSection() throws {
         
-        let layoutData = ModelBasedLayoutData(sections: [5, 3, 3], collectionViewSize: .zero)
+        let dataSourceCounts = DataSourceCounts(sections: [5, 3, 3])
 
         let updates: [DataUpdate] = [
-            .deleteItem(indexPath: IndexPath(item: 1, section: 0)),
-            .deleteItem(indexPath: IndexPath(item: 3, section: 0)),
-            .insertItem(indexPath: IndexPath(item: 1, section: 0)),
-            .insertItem(indexPath: IndexPath(item: 3, section: 0)),
+            .deleteItem(indexPair: IndexPair(item: 1, section: 0)),
+            .deleteItem(indexPair: IndexPair(item: 3, section: 0)),
+            .insertItem(indexPair: IndexPair(item: 1, section: 0)),
+            .insertItem(indexPair: IndexPair(item: 3, section: 0)),
             
-            .deleteItem(indexPath: IndexPath(item: 1, section: 1)),
+            .deleteItem(indexPair: IndexPair(item: 1, section: 1)),
             .deleteSection(sectionIndex: 1),
             
             .insertSection(sectionIndex: 1),
-            .insertItem(indexPath: IndexPath(item: 0, section: 1)),
-            .insertItem(indexPath: IndexPath(item: 1, section: 1)),
-            .insertItem(indexPath: IndexPath(item: 2, section: 1)),
+            .insertItem(indexPair: IndexPair(item: 0, section: 1)),
+            .insertItem(indexPair: IndexPair(item: 1, section: 1)),
+            .insertItem(indexPair: IndexPair(item: 2, section: 1)),
         ]
-        let changes = DataBatchUpdate(layoutData: layoutData, updateItems: updates)
-        let results: [IndexPath: IndexPath?] = [
-            IndexPath(item: 0, section: 0): IndexPath(item: 0, section: 0),
-            IndexPath(item: 1, section: 0): nil,
-            IndexPath(item: 2, section: 0): IndexPath(item: 2, section: 0),
-            IndexPath(item: 3, section: 0): nil,
-            IndexPath(item: 4, section: 0): IndexPath(item: 4, section: 0),
+        let changes = DataBatchUpdate(dataSourceCounts: dataSourceCounts, updateItems: updates)
+        let results: [IndexPair: IndexPair?] = [
+            IndexPair(item: 0, section: 0): IndexPair(item: 0, section: 0),
+            IndexPair(item: 1, section: 0): nil,
+            IndexPair(item: 2, section: 0): IndexPair(item: 2, section: 0),
+            IndexPair(item: 3, section: 0): nil,
+            IndexPair(item: 4, section: 0): IndexPair(item: 4, section: 0),
             
-            IndexPath(item: 0, section: 1): nil,
-            IndexPath(item: 1, section: 1): nil,
-            IndexPath(item: 2, section: 1): nil,
+            IndexPair(item: 0, section: 1): nil,
+            IndexPair(item: 1, section: 1): nil,
+            IndexPair(item: 2, section: 1): nil,
             
-            IndexPath(item: 0, section: 2): IndexPath(item: 0, section: 2),
-            IndexPath(item: 1, section: 2): IndexPath(item: 1, section: 2),
-            IndexPath(item: 2, section: 2): IndexPath(item: 2, section: 2),
+            IndexPair(item: 0, section: 2): IndexPair(item: 0, section: 2),
+            IndexPair(item: 1, section: 2): IndexPair(item: 1, section: 2),
+            IndexPair(item: 2, section: 2): IndexPair(item: 2, section: 2),
         ]
         
-        for indexPath in layoutData.indexPaths(startIndex: 0, endIndex: layoutData.itemsCount) {
-            XCTAssertEqual(changes.indexPathAfterUpdate(for: indexPath), results[indexPath])
+        for indexPair in dataSourceCounts.indexPairs(startIndex: 0, endIndex: dataSourceCounts.itemsCount) {
+            XCTAssertEqual(changes.indexPairAfterUpdate(for: indexPair), results[indexPair])
         }
         
     }  
