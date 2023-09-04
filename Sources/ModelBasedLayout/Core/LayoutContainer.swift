@@ -72,14 +72,14 @@ class LayoutContainer<ModelType: LayoutModel> {
         let model = modelProvider(dataSourceCounts, geometryInfo)
         let stickyController = StickyController(dataSourceCounts: dataSourceCounts,
                                                 geometryInfo: geometryInfo,
-                                                boundsProvider: self.boundsProvider) { (elementKind: ElementKind, indexPair: IndexPair) in
-            switch elementKind {
+                                                boundsProvider: self.boundsProvider) { element in
+            switch element.elementKind {
             case .header:
-                return model.layoutAttributes(forHeaderOfSection: indexPair.section)
+                return model.layoutAttributes(forHeaderOfSection: element.indexPair.section)
             case .footer:
-                return model.layoutAttributes(forFooterOfSection: indexPair.section)
+                return model.layoutAttributes(forFooterOfSection: element.indexPair.section)
             case .additionalSupplementaryView(let elementKind):
-                return model.layoutAttributes(forAdditionalSupplementaryViewOfKind: elementKind, at: indexPair)
+                return model.layoutAttributes(forAdditionalSupplementaryViewOfKind: elementKind, at: element.indexPair)
             default:
                 return nil
             }

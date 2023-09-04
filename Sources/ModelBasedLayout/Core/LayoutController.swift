@@ -150,40 +150,52 @@ class LayoutController<ModelType: LayoutModel> {
         self.stickyController(.afterUpdate)?.invalidateVisibleBounds()
     }
     
+    
     // MARK: Rect
     func layoutAttributesForElements(in rect: CGRect) -> [LayoutAttributes]? {
-        let items = self.layoutModel(.afterUpdate)!.items(in: rect)
-        return items.compactMap { (item: Element) -> LayoutAttributes? in
-            switch item {
-            case .cell(let indexPair):
-                return self.layoutAttributesForItem(at: indexPair)
-            case .header(let section):
-                return self.stickyController(.afterUpdate)?.layoutAttributes(forItemOfKind: .header, at: IndexPair(item: 0, section: section))
-            case .footer(let section):
-                return self.stickyController(.afterUpdate)?.layoutAttributes(forItemOfKind: .footer, at: IndexPair(item: 0, section: section))
-                
-            case .additionalSupplementaryView(let elementKind, let indexPair):
-                return self.stickyController(.afterUpdate)?.layoutAttributes(forItemOfKind: .additionalSupplementaryView(elementKind), at: indexPair)
-
-            }
+        let items = self.layoutModel(.afterUpdate)!.elements(in: rect)
+        return items.compactMap { (element: Element) -> LayoutAttributes? in
+            self.layoutAttributes(for: element)
         }
         
     }
     
+    
     // MARK: Layout Attributes
-    func initialLayoutAttributesForAppearingItem(at indexPair: IndexPair) -> LayoutAttributes? {
+    func layoutAttributes(for element: Element, uiKitUpdate: UIKitElementUpdate? = nil) -> LayoutAttributes? {
+        switch element.elementKind {
+        case .cell:
+            return self.layoutAttributes(forCellAt: element.indexPair, uiKitUpdate: uiKitUpdate)
+        case .header, .footer, .additionalSupplementaryView:
+            return self.layoutAttributes(forSupplementaryElement: element, uiKitUpdate: uiKitUpdate)
+        case .decorativeView:
+            return nil
+        }
+    }
+    
+    // MARK: Cells
+    func layoutAttributes(forCellAt indexPair: IndexPair, uiKitUpdate: UIKitElementUpdate?) -> LayoutAttributes? {
+        switch uiKitUpdate {
+        case .appearance:
+            return self.layoutAttributes(forAppearingItemAt: indexPair)
+        case .none:
+            return self.layoutAttributes(forCellAt: indexPair)
+        case .disappearance:
+            return self.layoutAttributes(forDisappearingItemAt: indexPair)
+        }
+    }
+    
+    func layoutAttributes(forAppearingItemAt indexPair: IndexPair) -> LayoutAttributes? {
         
         if let dataChange = self.dataChange {
             if let indexPairBeforeUpdate = dataChange.indexPairBeforeUpdate(for: indexPair), !dataChange.willReload(indexPair, state: .afterUpdate){
-                return self.layoutModel(.beforeUpdate)!.layoutAttributes(forItemAt: indexPairBeforeUpdate)?.withIndexPair(indexPair)
+                return self.layoutModel(.beforeUpdate)!.layoutAttributes(forCellAt: indexPairBeforeUpdate)?.withIndexPair(indexPair)
             } else {
                 switch (self.layoutModel(.afterUpdate)?.transitionAnimation(for: .cell(indexPair)) ?? .none) {
                 case .none:
-                    return self.layoutModel(.afterUpdate)?.layoutAttributes(forItemAt: indexPair)
+                    return self.layoutModel(.afterUpdate)?.layoutAttributes(forCellAt: indexPair)
                 case .opacity:
-                    var layoutAttrs = self.layoutModel(.afterUpdate)?.layoutAttributes(forItemAt: indexPair)
-                    layoutAttrs?.alpha = 0
-                    return layoutAttrs
+                    return self.layoutModel(.afterUpdate)?.layoutAttributes(forCellAt: indexPair)?.with(alpha: 0)
                     
                 case .custom:
                     return self.layoutModel(.afterUpdate)?.initialLayoutAttributes(forInsertedItemAt: indexPair)
@@ -191,28 +203,26 @@ class LayoutController<ModelType: LayoutModel> {
             }
         }
         
-        let attrs = self.layoutModel(.beforeUpdate)?.layoutAttributes(forItemAt: indexPair)
+        let attrs = self.layoutModel(.beforeUpdate)?.layoutAttributes(forCellAt: indexPair)
         return attrs
     }
     
-    func layoutAttributesForItem(at indexPair: IndexPair) -> LayoutAttributes? {
-        let layoutAttrs = self.layoutModel(.afterUpdate)?.layoutAttributes(forItemAt: indexPair)
+    func layoutAttributes(forCellAt indexPair: IndexPair) -> LayoutAttributes? {
+        let layoutAttrs = self.layoutModel(.afterUpdate)?.layoutAttributes(forCellAt: indexPair)
         return layoutAttrs
     }
     
-    func finalLayoutAttributesForDisappearingItem(at indexPair: IndexPair) -> LayoutAttributes? {
+    func layoutAttributes(forDisappearingItemAt indexPair: IndexPair) -> LayoutAttributes? {
         if let dataChange = self.dataChange {
             if dataChange.indexPairAfterUpdate(for: indexPair) != nil {
                 return nil
             } else {
                 switch (self.layoutModel(.beforeUpdate)?.transitionAnimation(for: .cell(indexPair)) ?? .none) {
                 case .none:
-                    return self.layoutModel(.beforeUpdate)?.layoutAttributes(forItemAt: indexPair)
+                    return self.layoutModel(.beforeUpdate)?.layoutAttributes(forCellAt: indexPair)
                     
                 case .opacity:
-                    var layoutAttrs = self.layoutModel(.beforeUpdate)?.layoutAttributes(forItemAt: indexPair)
-                    layoutAttrs?.alpha = 0
-                    return layoutAttrs
+                    return self.layoutModel(.beforeUpdate)?.layoutAttributes(forCellAt: indexPair)?.with(alpha: 0)
                     
                 case .custom:
                     return self.layoutModel(.beforeUpdate)?.finalLayoutAttributes(forDeletedItemAt: indexPair)
@@ -221,7 +231,7 @@ class LayoutController<ModelType: LayoutModel> {
             }
         }
         
-        let attrs = self.layoutModel(.afterUpdate)?.layoutAttributes(forItemAt: indexPair)
+        let attrs = self.layoutModel(.afterUpdate)?.layoutAttributes(forCellAt: indexPair)
         return attrs
     }
     
@@ -229,59 +239,74 @@ class LayoutController<ModelType: LayoutModel> {
     
     // MARK: Supplementary Views
     
-    func initialLayoutAttributesForAppearingSupplementaryElement(ofKind elementKind: String, at indexPair: IndexPair) -> LayoutAttributes? {
+    func layoutAttributes(forSupplementaryElement element: Element, uiKitUpdate: UIKitElementUpdate?) -> LayoutAttributes? {
+        switch uiKitUpdate {
+        case .appearance:
+            return self.layoutAttributes(forAppearingSupplementaryElement: element)
+        case .none:
+            return self.layoutAttributes(forSupplementaryElement: element)
+        case .disappearance:
+            return self.layoutAttributes(forDisappearingSupplementaryElement: element)
+        }
+    }
+    
+    func layoutAttributes(forAppearingSupplementaryElement element: Element) -> LayoutAttributes? {
+        assert(element.elementKind.isSupplementaryView)
         
         if let dataChange = self.dataChange {
-            if let indexPairBeforeUpdate = dataChange.indexPairBeforeUpdate(for: indexPair), !dataChange.willReload(indexPair, state: .afterUpdate) {
-                return self.stickyController(.beforeUpdate)?.layoutAttributes(forItemOfKind: .init(supplementaryOfKind: elementKind), at: indexPairBeforeUpdate)?.withIndexPair(indexPair)
+            if let indexPairBeforeUpdate = dataChange.indexPairBeforeUpdate(for: element.indexPair),
+                !dataChange.willReload(element.indexPair, state: .afterUpdate) {
+                return self.stickyController(.beforeUpdate)?.layoutAttributes(for: Element(indexPair: indexPairBeforeUpdate, elementKind: element.elementKind))?.withIndexPair(element.indexPair)
                 
             } else {
-                switch (self.layoutModel(.afterUpdate)?.transitionAnimation(for: .init(supplementaryOfKind: elementKind, indexPair: indexPair)) ?? .none) {
+                switch (self.layoutModel(.afterUpdate)?.transitionAnimation(for: element) ?? .none) {
                 case .none:
-                    return self.stickyController(.afterUpdate)?.layoutAttributes(forItemOfKind: .init(supplementaryOfKind: elementKind), at: indexPair)
+                    return self.stickyController(.afterUpdate)?.layoutAttributes(for: element)
                 case .opacity:
-                    var layoutAttrs = self.stickyController(.afterUpdate)?.layoutAttributes(forItemOfKind: .init(supplementaryOfKind: elementKind), at: indexPair)
-                    layoutAttrs?.alpha = 0
-                    return layoutAttrs
+                    return self.stickyController(.afterUpdate)?.layoutAttributes(for: element)?.with(alpha: 0)
                     
                 case .custom:
-                    return self.layoutModel(.afterUpdate)?.initialLayoutAttributes(forAdditionalInsertedSupplementaryViewOfKind: elementKind, at: indexPair)
+                    return self.layoutModel(.afterUpdate)?.initialLayoutAttributes(forAdditionalInsertedSupplementaryViewOfKind: element.elementKind.representedElementKind!, at: element.indexPair)
                 }
             }
         }
         
-        return self.stickyController(.beforeUpdate)?.layoutAttributes(forItemOfKind: .init(supplementaryOfKind: elementKind), at: indexPair)
+        return self.stickyController(.beforeUpdate)?.layoutAttributes(for: element)
     }
     
-    func layoutAttributesForSupplementaryView(ofKind elementKind: String, at indexPair: IndexPair) -> LayoutAttributes? {
-        self.stickyController(.afterUpdate)?.layoutAttributes(forItemOfKind: .init(supplementaryOfKind: elementKind), at: indexPair)
+    func layoutAttributes(forSupplementaryElement element: Element) -> LayoutAttributes? {
+        assert(element.elementKind.isSupplementaryView)
+        
+        return self.stickyController(.afterUpdate)?.layoutAttributes(for: element)
     }
     
-    func finalLayoutAttributesForDisappearingSupplementaryElement(ofKind elementKind: String, at indexPair: IndexPair) -> LayoutAttributes? {
+    func layoutAttributes(forDisappearingSupplementaryElement element: Element) -> LayoutAttributes? {
+        assert(element.elementKind.isSupplementaryView)
         
         if let dataChange = self.dataChange {
-            if dataChange.indexPairAfterUpdate(for: indexPair) != nil {
+            if dataChange.indexPairAfterUpdate(for: element.indexPair) != nil {
                 return nil
             } else {
-                switch (self.layoutModel(.beforeUpdate)?.transitionAnimation(for: .init(supplementaryOfKind: elementKind, indexPair: indexPair)) ?? .none)  {
+                switch (self.layoutModel(.beforeUpdate)?.transitionAnimation(for: element) ?? .none)  {
                 case .none:
-                    var layoutAttrs = self.stickyController(.beforeUpdate)?.layoutAttributes(forItemOfKind: .init(supplementaryOfKind: elementKind), at: indexPair)
+                    var layoutAttrs = self.stickyController(.beforeUpdate)?.layoutAttributes(for: element)
+                    
+                    // For some reason, we need to change the zIndex of the layout attributes by any amount for it to be respected at all. It is not clear yet why.
                     layoutAttrs?.zIndex += 1
                     return layoutAttrs
                 case .opacity:
-                    var layoutAttrs = self.stickyController(.beforeUpdate)?.layoutAttributes(forItemOfKind: .init(supplementaryOfKind: elementKind), at: indexPair)
-                    layoutAttrs?.alpha = 0
+                    var layoutAttrs = self.stickyController(.beforeUpdate)?.layoutAttributes(for: element)?.with(alpha: 0)
                     
                     // For some reason, we need to change the zIndex of the layout attributes by any amount for it to be respected at all. It is not clear yet why.
                     layoutAttrs?.zIndex += 1
                     return layoutAttrs
                     
                 case .custom:
-                    return self.layoutModel(.beforeUpdate)?.finalLayoutAttributes(forAdditionalDeletedSupplementaryViewOfKind: elementKind, at: indexPair)
+                    return self.layoutModel(.beforeUpdate)?.finalLayoutAttributes(forAdditionalDeletedSupplementaryViewOfKind: element.elementKind.representedElementKind!, at: element.indexPair)
                 }
             }
         }
         
-        return self.stickyController(.afterUpdate)?.layoutAttributes(forItemOfKind: .init(supplementaryOfKind: elementKind), at: indexPair)
+        return self.stickyController(.afterUpdate)?.layoutAttributes(for: element)
     }
 }

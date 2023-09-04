@@ -150,17 +150,17 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
 
     public override final func initialLayoutAttributesForAppearingItem(at indexPath: IndexPath) -> UICollectionViewLayoutAttributes? {
         guard indexPath.count == 2 else { return nil }
-        return  self.controller.initialLayoutAttributesForAppearingItem(at: .init(indexPath))?.forLayout()
+        return  self.controller.layoutAttributes(forAppearingItemAt: .init(indexPath))?.forLayout()
     }
 
     public override final func layoutAttributesForItem(at indexPath: IndexPath) -> UICollectionViewLayoutAttributes? {
         guard indexPath.count == 2 else { return nil }
-        return self.controller.layoutAttributesForItem(at: .init(indexPath))?.forLayout()
+        return self.controller.layoutAttributes(forCellAt: .init(indexPath))?.forLayout()
     }
 
     public override final func finalLayoutAttributesForDisappearingItem(at indexPath: IndexPath) -> UICollectionViewLayoutAttributes? {
         guard indexPath.count == 2 else { return nil }
-        return self.controller.finalLayoutAttributesForDisappearingItem(at: .init(indexPath))?.forLayout()
+        return self.controller.layoutAttributes(forDisappearingItemAt: .init(indexPath))?.forLayout()
     }
     
     
@@ -168,17 +168,20 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
     // MARK: Supplementary Views
     public override final func initialLayoutAttributesForAppearingSupplementaryElement(ofKind elementKind: String, at indexPath: IndexPath) -> UICollectionViewLayoutAttributes? {
         guard indexPath.count == 2 else { return nil }
-        return self.controller.initialLayoutAttributesForAppearingSupplementaryElement(ofKind: elementKind, at: .init(indexPath))?.forLayout()
+        let element = Element(indexPair: .init(indexPath), elementKind: .init(supplementaryOfKind: elementKind))
+        return self.controller.layoutAttributes(forAppearingSupplementaryElement: element)?.forLayout()
     }
     
     public override final func layoutAttributesForSupplementaryView(ofKind elementKind: String, at indexPath: IndexPath) -> UICollectionViewLayoutAttributes? {
         guard indexPath.count == 2 else { return nil }
-        return self.controller.layoutAttributesForSupplementaryView(ofKind: elementKind, at: .init(indexPath))?.forLayout()
+        let element = Element(indexPair: .init(indexPath), elementKind: .init(supplementaryOfKind: elementKind))
+        return self.controller.layoutAttributes(forSupplementaryElement: element)?.forLayout()
     }
     
     public override final func finalLayoutAttributesForDisappearingSupplementaryElement(ofKind elementKind: String, at indexPath: IndexPath) -> UICollectionViewLayoutAttributes? {
         guard indexPath.count == 2 else { return nil }
-        return self.controller.finalLayoutAttributesForDisappearingSupplementaryElement(ofKind: elementKind, at: .init(indexPath))?.forLayout()
+        let element = Element(indexPair: .init(indexPath), elementKind: .init(supplementaryOfKind: elementKind))
+        return self.controller.layoutAttributes(forDisappearingSupplementaryElement: element)?.forLayout()
     }
 }
 

@@ -68,4 +68,8 @@ public enum ElementKind: Equatable, Hashable {
             return string
         }
     }
+    
+    var isSupplementaryView: Bool {
+        return self.representedElementCategory == .supplementaryView
+    }
 }

@@ -127,6 +127,12 @@ public struct LayoutAttributes {
         return copy
     }
     
+    public func with(alpha: CGFloat) -> Self {
+        var copy = self
+        copy.alpha = alpha
+        return copy
+    }
+    
     public func isVisible(in rect: CGRect) -> Bool {
         if let extendedStickyBounds = extendedStickyBounds {
             return extendedStickyBounds.intersects(rect)

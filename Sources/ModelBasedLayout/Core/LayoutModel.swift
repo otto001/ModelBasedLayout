@@ -12,11 +12,11 @@ public protocol LayoutModel {
     
     var contentSize: CGSize { get }
     
-    func transitionAnimation(for item: Element) -> TransitionAnimation
+    func transitionAnimation(for element: Element) -> TransitionAnimation
     
-    func items(in rect: CGRect) -> [Element]
+    func elements(in rect: CGRect) -> [Element]
     
-    func layoutAttributes(forItemAt indexPair: IndexPair) -> LayoutAttributes?
+    func layoutAttributes(forCellAt indexPair: IndexPair) -> LayoutAttributes?
     func initialLayoutAttributes(forInsertedItemAt indexPair: IndexPair) -> LayoutAttributes?
     func finalLayoutAttributes(forDeletedItemAt indexPair: IndexPair) -> LayoutAttributes?
     
@@ -30,7 +30,7 @@ public protocol LayoutModel {
 
 public extension LayoutModel {
     
-    func transitionAnimation(for item: Element) -> TransitionAnimation {
+    func transitionAnimation(for element: Element) -> TransitionAnimation {
         return .opacity
     }
     

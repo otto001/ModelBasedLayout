@@ -9,16 +9,11 @@ import UIKit
 
 class StickyController {
     
-    struct ItemKey: Hashable {
-        var elementKind: ElementKind
-        var indexPair: IndexPair
-    }
-    
     private var boundsProvider: () -> CGRect
-    private var layoutAttributesProvider: (_ elementKind: ElementKind, _ indexPair: IndexPair) -> LayoutAttributes?
+    private var layoutAttributesProvider: (_ element: Element) -> LayoutAttributes?
     
-    private var cachedAttributes: [ItemKey: LayoutAttributes] = [:]
-    private var invalidationMap: ChunkedRectMap<ItemKey>
+    private var cachedAttributes: [Element: LayoutAttributes] = [:]
+    private var invalidationMap: ChunkedRectMap<Element>
     
     private var bounds: CGRect = .zero
     private var safeAreaInsets: UIEdgeInsets
@@ -32,7 +27,7 @@ class StickyController {
     init(dataSourceCounts: DataSourceCounts,
          geometryInfo: GeometryInfo,
          boundsProvider: @escaping () -> CGRect,
-         layoutAttributesProvider: @escaping (_ elementKind: ElementKind, _ indexPair: IndexPair) -> LayoutAttributes?) {
+         layoutAttributesProvider: @escaping (_ element: Element) -> LayoutAttributes?) {
         
         self.boundsProvider = boundsProvider
         self.layoutAttributesProvider = layoutAttributesProvider
@@ -68,19 +63,18 @@ class StickyController {
         (stickyAttributes.useSafeAreaInsets ? self.visibleBounds : self.bounds).inset(by: stickyAttributes.additionalInsets)
     }
     
-    private func baseLayoutAttributes(forItemOfKind elementKind: ElementKind, at indexPair: IndexPair) -> LayoutAttributes? {
-        let key = ItemKey(elementKind: elementKind, indexPair: indexPair)
-        if let attrs = self.cachedAttributes[key] {
+    private func baseLayoutAttributes(for element: Element) -> LayoutAttributes? {
+        if let attrs = self.cachedAttributes[element] {
             return attrs
         }
         
-        let attrs = layoutAttributesProvider(elementKind, indexPair)
+        let attrs = layoutAttributesProvider(element)
         if let attrs = attrs {
-            self.cachedAttributes[key] = attrs
+            self.cachedAttributes[element] = attrs
             
             if attrs.isSticky {
                 self.usesStickyViews = true
-                self.invalidationMap.insert(key, with: attrs.extendedStickyBounds!)
+                self.invalidationMap.insert(element, with: attrs.extendedStickyBounds!)
             }
         }
         return attrs
@@ -119,9 +113,9 @@ class StickyController {
     }
     
 
-    func layoutAttributes(forItemOfKind elementKind: ElementKind, at indexPair: IndexPair) -> LayoutAttributes? {
+    func layoutAttributes(for element: Element) -> LayoutAttributes? {
         self.updateVisibleBoundsIfNeeded()
-        return self.baseLayoutAttributes(forItemOfKind: elementKind, at: indexPair).map {self.stickify($0)}
+        return self.baseLayoutAttributes(for: element).map {self.stickify($0)}
     }
 
     func configureInvalidationContext(forBoundsChange newBounds: CGRect, with context: UICollectionViewLayoutInvalidationContext) {
