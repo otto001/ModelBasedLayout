@@ -14,9 +14,9 @@ public extension CATransform3D {
 
 
 public struct LayoutAttributes {
-    public private(set) var indexPair: IndexPair
-    
-    public let elementKind: ElementKind
+    public private(set) var element: Element
+    var indexPair: IndexPair { element.indexPair }
+    var elementKind: ElementKind { element.elementKind }
    
     public var frame: CGRect
     public var zIndex: Int
@@ -63,13 +63,11 @@ public struct LayoutAttributes {
         }
     }
     
-    public init(indexPair: IndexPair,
-                elementKind: ElementKind,
+    public init(element: Element,
          frame: CGRect = .zero, zIndex: Int = 0,
          alpha: CGFloat = 1, isHidden: Bool = false,
          transform: CGAffineTransform = .identity) {
-        self.indexPair = indexPair
-        self.elementKind = elementKind
+        self.element = element
         self.frame = frame
         self.zIndex = zIndex
         self.alpha = alpha
@@ -78,9 +76,8 @@ public struct LayoutAttributes {
     }
     
     public init(_ collectionViewLayoutAttributes: UICollectionViewLayoutAttributes) {
-        self.indexPair = .init(collectionViewLayoutAttributes.indexPath)
-
-        self.elementKind = .init(from: collectionViewLayoutAttributes)
+        self.element = .init(indexPair: .init(collectionViewLayoutAttributes.indexPath), elementKind: .init(from: collectionViewLayoutAttributes))
+ 
 
         self.frame = collectionViewLayoutAttributes.frame
         self.zIndex = collectionViewLayoutAttributes.zIndex
@@ -96,17 +93,17 @@ public struct LayoutAttributes {
         let collectionViewLayoutAttributes: UICollectionViewLayoutAttributes
         
         
-        switch self.elementKind {
+        switch self.element.elementKind {
         case .cell:
-            collectionViewLayoutAttributes = UICollectionViewLayoutAttributes(forCellWith: indexPair.indexPath)
+            collectionViewLayoutAttributes = UICollectionViewLayoutAttributes(forCellWith: element.indexPair.indexPath)
         case .header:
-            collectionViewLayoutAttributes = UICollectionViewLayoutAttributes(forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader, with: indexPair.indexPath)
+            collectionViewLayoutAttributes = UICollectionViewLayoutAttributes(forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader, with: element.indexPair.indexPath)
         case .footer:
-            collectionViewLayoutAttributes = UICollectionViewLayoutAttributes(forSupplementaryViewOfKind: UICollectionView.elementKindSectionFooter, with: indexPair.indexPath)
+            collectionViewLayoutAttributes = UICollectionViewLayoutAttributes(forSupplementaryViewOfKind: UICollectionView.elementKindSectionFooter, with: element.indexPair.indexPath)
         case .additionalSupplementaryView(let elementKind):
-            collectionViewLayoutAttributes = UICollectionViewLayoutAttributes(forSupplementaryViewOfKind: elementKind, with: indexPair.indexPath)
+            collectionViewLayoutAttributes = UICollectionViewLayoutAttributes(forSupplementaryViewOfKind: elementKind, with: element.indexPair.indexPath)
         case .decorativeView(let elementKind):
-            collectionViewLayoutAttributes = UICollectionViewLayoutAttributes(forDecorationViewOfKind: elementKind, with: indexPair.indexPath)
+            collectionViewLayoutAttributes = UICollectionViewLayoutAttributes(forDecorationViewOfKind: elementKind, with: element.indexPair.indexPath)
         }
         
         collectionViewLayoutAttributes.frame = self.frame
@@ -123,7 +120,7 @@ public struct LayoutAttributes {
     
     internal func withIndexPair(_ indexPair: IndexPair) -> Self {
         var copy = self
-        copy.indexPair = indexPair
+        copy.element.indexPair = indexPair
         return copy
     }
     
