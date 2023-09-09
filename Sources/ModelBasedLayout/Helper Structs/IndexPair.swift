@@ -34,3 +34,9 @@ extension IndexPair: Comparable {
     }
 }
 
+extension IndexPair: CustomStringConvertible {
+    public var description: String {
+        "\(section).\(item)"
+    }
+}
+

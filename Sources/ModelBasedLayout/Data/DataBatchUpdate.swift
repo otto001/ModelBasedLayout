@@ -14,7 +14,7 @@ struct DataBatchUpdate {
     private var indexPairsAfterUpdate: [IndexPair: IndexPair?] = [:]
     private var indexPairsBeforeUpdate: [IndexPair: IndexPair] = [:]
     
-    private var sectionIndiciesAfterUpdate: [Int: Int?] = [:]
+    private var sectionIndiciesAfterUpdate: [Int: Int] = [:]
     
     private var itemReloads: Set<IndexPair> = .init()
     private var sectionReloads: Set<Int> = .init()
@@ -86,6 +86,11 @@ struct DataBatchUpdate {
                 insertedSections.append(sectionIndex)
                 index += 1
                 
+            case .moveSection(let sectionIndexBeforeUpdate, let sectionIndexAfterUpdate):
+                deletedSections.append(sectionIndexBeforeUpdate)
+                insertedSections.append(sectionIndexAfterUpdate)
+                index += 1
+                
             default:
                 stop = true
                 break
@@ -98,54 +103,97 @@ struct DataBatchUpdate {
     
     private mutating func addUpdateItems(_ dataUpdates: [DataUpdate]) {
         
-        var dataUpdates = dataUpdates
-        
-        self.processReloads(&dataUpdates)
-        
-        dataUpdates.sort()
-        
-        let (deletedSections, insertedSections) = self.processSectionUpdates(&dataUpdates)
-
-       
-        
-        var deletedItemsPerSection: [[Int]] = Array(repeating: [], count: dataSourceCounts.numberOfSections + insertedSections.count)
-        var insertedItemsPerSection: [[Int]] = Array(repeating: [], count: dataSourceCounts.numberOfSections + insertedSections.count)
-        
+        var sectionSummary: IndexBasedSummary = .init(initialItemCount: dataSourceCounts.numberOfSections)
+        var itemInserts: [IndexPair] = []
+        var itemDeletions: [IndexPair] = []
+        var itemMoves: [(IndexPair, IndexPair)] = []
         
         for dataUpdate in dataUpdates {
             switch dataUpdate {
+            case .deleteSection(let sectionIndex):
+                sectionSummary.deletions.append(sectionIndex)
+                
+            case .insertSection(let sectionIndex):
+                sectionSummary.insertions.append(sectionIndex)
+                
+            case .moveSection(let sectionIndexBeforeUpdate, let sectionIndexAfterUpdate):
+                sectionSummary.moves.append((sectionIndexBeforeUpdate, sectionIndexAfterUpdate))
+                
+            case .reloadSection(let sectionIndexBeforeUpdate, _):
+                sectionReloads.insert(sectionIndexBeforeUpdate)
+                
             case .deleteItem(let indexPair):
-                deletedItemsPerSection[indexPair.section].append(indexPair.item)
-
+                itemDeletions.append(indexPair)
+                
             case .insertItem(let indexPair):
-                insertedItemsPerSection[indexPair.section].append(indexPair.item)
-            
-            default:
-                fatalError("Meh")
+                itemInserts.append(indexPair)
+                
+            case .moveItem(let indexPairBeforeUpdate, let indexPairAfterUpdate):
+                itemMoves.append((indexPairBeforeUpdate, indexPairAfterUpdate))
+                
+            case .reloadItem(let indexPairBeforeUpdate, _):
+                itemReloads.insert(indexPairBeforeUpdate)
             }
         }
         
-        sectionIndiciesAfterUpdate = calculateIndexShifts(numberOfItems: dataSourceCounts.numberOfSections, deletions: deletedSections, insertions: insertedSections)
+        sectionIndiciesAfterUpdate = calculateIndexShifts(summary: sectionSummary)
+        let moves = calculateIndexShifts(summary: IndexBasedSummary(initialItemCount: dataSourceCounts.itemsCount + sectionSummary.insertions.count,
+                                                                    moves: sectionSummary.moves))
+        
+        var perSectionSummaries: [IndexBasedSummary] = Array(repeating: .init(), count: dataSourceCounts.numberOfSections + sectionSummary.insertions.count)
+        
+        for indexPair in itemDeletions {
+            guard let sectionIndexAfterUpdate = sectionIndiciesAfterUpdate[indexPair.section] else { continue }
+            perSectionSummaries[sectionIndexAfterUpdate].deletions.append(indexPair.item)
+        }
+        
+        for indexPair in itemInserts {
+            guard let sectionIndexAfterUpdate = moves[indexPair.section] else { continue }
+            perSectionSummaries[sectionIndexAfterUpdate].insertions.append(indexPair.item)
+        }
+        
+        for (indexPairBeforeUpdate, indexPairAfterUpdate) in itemMoves {
+            if indexPairBeforeUpdate.section == indexPairAfterUpdate.section {
+                perSectionSummaries[indexPairAfterUpdate.section].moves.append((indexPairBeforeUpdate.item, indexPairAfterUpdate.item))
+            } else {
+                perSectionSummaries[indexPairBeforeUpdate.section].deletions.append(indexPairBeforeUpdate.item)
+                perSectionSummaries[indexPairAfterUpdate.section].insertions.append(indexPairAfterUpdate.item)
+            }
+        }
         
         for (sectionIndexBeforeUpdate, section) in dataSourceCounts.sections.enumerated() {
             
-            guard let sectionIndexAfterUpdate = sectionIndiciesAfterUpdate[sectionIndexBeforeUpdate]! else {
+            guard let sectionIndexAfterUpdate = sectionIndiciesAfterUpdate[sectionIndexBeforeUpdate] else {
                 // No need to explcitlty delete items of a section if the entire section is deleted
                 continue
             }
             
-            let deletedIndicies: [Int] = deletedItemsPerSection[sectionIndexBeforeUpdate].sorted()
+            var summary = perSectionSummaries[sectionIndexAfterUpdate]
+            summary.initialItemCount = section.itemCount
             
-            let insertedIndicies: [Int] = insertedItemsPerSection[sectionIndexAfterUpdate].sorted()
+            let withinSectionMoves = calculateIndexShifts(summary: summary)
             
-            let withinSectionMoves = calculateIndexShifts(numberOfItems: section.itemCount, deletions: deletedIndicies, insertions: insertedIndicies)
-            
-            for (indexBeforeUpdate, indexAfterUpdate) in withinSectionMoves {
-                indexPairsAfterUpdate[IndexPair(item: indexBeforeUpdate, section: sectionIndexBeforeUpdate)] = indexAfterUpdate.map {
+            for indexBeforeUpdate in 0..<section.itemCount {
+                indexPairsAfterUpdate[IndexPair(item: indexBeforeUpdate, section: sectionIndexBeforeUpdate)] = withinSectionMoves[indexBeforeUpdate].map {
                     IndexPair(item: $0, section: sectionIndexAfterUpdate)
                 }
             }
         }
+        
+        for (indexPairBeforeUpdate, indexPairAfterUpdate) in itemMoves {
+            if indexPairBeforeUpdate.section != indexPairAfterUpdate.section {
+                indexPairsAfterUpdate[indexPairBeforeUpdate] = indexPairAfterUpdate
+            }
+        }
+//
+//        let s = indexPairsAfterUpdate.sorted(by: { (p1, p2) in
+//            p1.key < p2.key
+//        })
+//        for (a, b) in s {
+//            print("\(a) -> \(b)")
+//        }
+//
+        print()
     }
     
     private mutating func buildReverseAccessors() {
@@ -159,43 +207,80 @@ struct DataBatchUpdate {
     }
 }
 
+struct IndexBasedSummary {
+    var initialItemCount: Int
+    var deletions: [Int]
+    var insertions: [Int]
+    var moves: [(Int, Int)]
+    
+    init(initialItemCount: Int = 0, deletions: [Int] = [], insertions: [Int] = [], moves: [(Int, Int)] = []) {
+        self.initialItemCount = initialItemCount
+        self.deletions = deletions
+        self.insertions = insertions
+        self.moves = moves
+    }
+}
 
 
-private func calculateIndexShifts(numberOfItems: Int, deletions: [Int], insertions: [Int]) -> [Int: Int?] {
-    var result: [Int: Int?] = [:]
-    
-    var shiftedIndicies = Array(repeating: 0, count: numberOfItems)
-    
-    var counter = 0
-    
+private func calculateIndexShifts(summary: IndexBasedSummary) -> [Int: Int] {
+    var shiftedIndicies = ContiguousArray(repeating: 0, count: summary.initialItemCount)
+
     for i in 0..<shiftedIndicies.count {
-        if counter < deletions.endIndex && deletions[counter] == i {
-            shiftedIndicies[i] = -1
-            counter += 1
-        } else {
-            shiftedIndicies[i] = i - counter
+        shiftedIndicies[i] = i
+    }
+    
+    // Deletions
+    if !summary.deletions.isEmpty {
+        for deletion in summary.deletions {
+            shiftedIndicies[deletion] = -1
+        }
+        shiftedIndicies = shiftedIndicies.filter { $0 >= 0 }
+    }
+    
+    // Insertions
+    if !summary.insertions.isEmpty {
+        
+        var insertionShifts = ContiguousArray(repeating: 0, count: summary.initialItemCount + summary.insertions.count)
+        for insertion in summary.insertions {
+            insertionShifts[insertion] += 1
+        }
+        
+        for i in insertionShifts.indices {
+            while insertionShifts[i] > 0 {
+                shiftedIndicies.insert(-2, at: i)
+                insertionShifts[i] -= 1
+            }
         }
     }
     
     
-    counter = 0
-    
-    for i in 0..<shiftedIndicies.count {
-        let indexAfterDelete = shiftedIndicies[i]
-        if indexAfterDelete == -1 {
-            continue
-        }
+    // Moves
+    if !summary.moves.isEmpty {
         
-        while counter < insertions.endIndex && insertions[counter] == indexAfterDelete + counter {
-            counter += 1
-        }
         
-        shiftedIndicies[i] = indexAfterDelete + counter
+        var afterMoves = ContiguousArray(repeating: -3, count: shiftedIndicies.count)
+        
+        for move in summary.moves {
+            afterMoves[move.1] = shiftedIndicies[move.0]
+            shiftedIndicies[move.0] = -3
+        }
+        let indiciesNotMovedExplicitly = shiftedIndicies.filter { $0 != -3 }
+        
+        var notMovedIndex = 0
+        
+        for i in afterMoves.indices {
+            guard afterMoves[i] == -3 else { continue }
+            afterMoves[i] = indiciesNotMovedExplicitly[notMovedIndex]
+            notMovedIndex += 1
+        }
+        shiftedIndicies = afterMoves
     }
     
-    
+    var result: [Int: Int] = [:]
+
     for (i, j) in shiftedIndicies.enumerated() {
-        result[i] = j < 0 ? nil : j
+        guard j >= 0 else { continue }
+        result[j] = i
     }
     
     return result

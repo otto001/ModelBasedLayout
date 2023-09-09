@@ -12,7 +12,7 @@ public protocol LayoutModel {
     
     var contentSize: CGSize { get }
     
-    func transitionAnimation(for element: Element) -> TransitionAnimation
+    func transitionAnimation(for element: Element, transition: ElementTransition) -> TransitionAnimation
     
     func elements(in rect: CGRect) -> [Element]
     
@@ -24,13 +24,13 @@ public protocol LayoutModel {
     func layoutAttributes(forFooterOfSection section: Int) -> LayoutAttributes?
     
     func layoutAttributes(forAdditionalSupplementaryViewOfKind elementKind: String, at indexPair: IndexPair) -> LayoutAttributes?
-    func initialLayoutAttributes(forAdditionalInsertedSupplementaryViewOfKind elementKind: String, at indexPair: IndexPair) -> LayoutAttributes?
-    func finalLayoutAttributes(forAdditionalDeletedSupplementaryViewOfKind elementKind: String, at indexPair: IndexPair) -> LayoutAttributes?
+    func initialLayoutAttributes(forAdditionalInsertedSupplementaryViewOfKind elementKind: String, at indexPair: IndexPair, isReloading: Bool) -> LayoutAttributes?
+    func finalLayoutAttributes(forAdditionalDeletedSupplementaryViewOfKind elementKind: String, at indexPair: IndexPair, isReloading: Bool) -> LayoutAttributes?
 }
 
 public extension LayoutModel {
     
-    func transitionAnimation(for element: Element) -> TransitionAnimation {
+    func transitionAnimation(for element: Element, transition: ElementTransition) -> TransitionAnimation {
         return .opacity
     }
     
@@ -54,11 +54,11 @@ public extension LayoutModel {
         return nil
     }
     
-    func initialLayoutAttributes(forAdditionalInsertedSupplementaryViewOfKind elementKind: String, at indexPair: IndexPair) -> LayoutAttributes? {
+    func initialLayoutAttributes(forAdditionalInsertedSupplementaryViewOfKind elementKind: String, at indexPair: IndexPair, isReloading: Bool) -> LayoutAttributes? {
         return nil
     }
     
-    func finalLayoutAttributes(forAdditionalDeletedSupplementaryViewOfKind elementKind: String, at indexPair: IndexPair) -> LayoutAttributes? {
+    func finalLayoutAttributes(forAdditionalDeletedSupplementaryViewOfKind elementKind: String, at indexPair: IndexPair, isReloading: Bool) -> LayoutAttributes? {
         return nil
     }
 }

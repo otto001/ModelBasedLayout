@@ -80,7 +80,7 @@ class StickyController {
         return attrs
     }
     
-    private func stickify(_ attrs: LayoutAttributes) -> LayoutAttributes {
+    func stickify(_ attrs: LayoutAttributes) -> LayoutAttributes {
         guard attrs.isSticky && attrs.frame.width > 0 && attrs.frame.height > 0 else { return attrs }
         
         let stickyAttrs = attrs.stickyAttributes!

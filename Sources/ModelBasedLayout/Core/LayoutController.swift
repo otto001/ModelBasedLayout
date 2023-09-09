@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  LayoutController.swift
 //  
 //
 //  Created by Matteo Ludwig on 26.08.23.
@@ -109,6 +109,7 @@ class LayoutController<ModelType: LayoutModel> {
         if newBounds.size != self.geometryInfo(.afterUpdate)?.viewSize {
             return true
         }
+        // TODO: move this logic into the sticky controller
         if self.usesStickyViews() && self.lastInvalidatedBounds != newBounds {
             self.lastInvalidatedBounds = newBounds
             return true
@@ -150,6 +151,10 @@ class LayoutController<ModelType: LayoutModel> {
         self.stickyController(.afterUpdate)?.invalidateVisibleBounds()
     }
     
+    // MARK: Animations
+    func transitionAnimation(for element: Element, transition: ElementTransition, state: LayoutState) -> TransitionAnimation {
+        self.layoutModel(state)?.transitionAnimation(for: element, transition: transition) ?? .none
+    }
     
     // MARK: Rect
     func layoutAttributesForElements(in rect: CGRect) -> [LayoutAttributes]? {
@@ -162,36 +167,30 @@ class LayoutController<ModelType: LayoutModel> {
     
     
     // MARK: Layout Attributes
-    func layoutAttributes(for element: Element, uiKitUpdate: UIKitElementUpdate? = nil) -> LayoutAttributes? {
+    func layoutAttributes(for element: Element) -> LayoutAttributes? {
         switch element.elementKind {
         case .cell:
-            return self.layoutAttributes(forCellAt: element.indexPair, uiKitUpdate: uiKitUpdate)
+            return self.layoutAttributes(forCellAt: element.indexPair)
         case .header, .footer, .additionalSupplementaryView:
-            return self.layoutAttributes(forSupplementaryElement: element, uiKitUpdate: uiKitUpdate)
+            return self.layoutAttributes(forSupplementaryElement: element)
         case .decorativeView:
             return nil
         }
     }
     
     // MARK: Cells
-    func layoutAttributes(forCellAt indexPair: IndexPair, uiKitUpdate: UIKitElementUpdate?) -> LayoutAttributes? {
-        switch uiKitUpdate {
-        case .appearance:
-            return self.layoutAttributes(forAppearingItemAt: indexPair)
-        case .none:
-            return self.layoutAttributes(forCellAt: indexPair)
-        case .disappearance:
-            return self.layoutAttributes(forDisappearingItemAt: indexPair)
-        }
-    }
     
     func layoutAttributes(forAppearingItemAt indexPair: IndexPair) -> LayoutAttributes? {
         
         if let dataChange = self.dataChange {
-            if let indexPairBeforeUpdate = dataChange.indexPairBeforeUpdate(for: indexPair), !dataChange.willReload(indexPair, state: .afterUpdate){
+            let reload = dataChange.willReload(indexPair, state: .afterUpdate)
+            
+            if let indexPairBeforeUpdate = dataChange.indexPairBeforeUpdate(for: indexPair), !reload {
                 return self.layoutModel(.beforeUpdate)!.layoutAttributes(forCellAt: indexPairBeforeUpdate)?.withIndexPair(indexPair)
             } else {
-                switch (self.layoutModel(.afterUpdate)?.transitionAnimation(for: .cell(indexPair)) ?? .none) {
+                let transition: ElementTransition = reload ? .reload : .insertion
+                
+                switch self.transitionAnimation(for: .cell(indexPair), transition: transition, state: .afterUpdate) {
                 case .none:
                     return self.layoutModel(.afterUpdate)?.layoutAttributes(forCellAt: indexPair)
                 case .opacity:
@@ -214,10 +213,14 @@ class LayoutController<ModelType: LayoutModel> {
     
     func layoutAttributes(forDisappearingItemAt indexPair: IndexPair) -> LayoutAttributes? {
         if let dataChange = self.dataChange {
-            if dataChange.indexPairAfterUpdate(for: indexPair) != nil {
-                return nil
+            let reload = dataChange.willReload(indexPair, state: .beforeUpdate)
+            
+            if let indexPairAfterUpdate = dataChange.indexPairAfterUpdate(for: indexPair), !reload {
+                return self.layoutModel(.afterUpdate)!.layoutAttributes(forCellAt: indexPairAfterUpdate)?.withIndexPair(indexPair)
             } else {
-                switch (self.layoutModel(.beforeUpdate)?.transitionAnimation(for: .cell(indexPair)) ?? .none) {
+                let transition: ElementTransition = reload ? .reload : .deletion
+                
+                switch self.transitionAnimation(for: .cell(indexPair), transition: transition, state: .beforeUpdate) {
                 case .none:
                     return self.layoutModel(.beforeUpdate)?.layoutAttributes(forCellAt: indexPair)
                     
@@ -239,34 +242,30 @@ class LayoutController<ModelType: LayoutModel> {
     
     // MARK: Supplementary Views
     
-    func layoutAttributes(forSupplementaryElement element: Element, uiKitUpdate: UIKitElementUpdate?) -> LayoutAttributes? {
-        switch uiKitUpdate {
-        case .appearance:
-            return self.layoutAttributes(forAppearingSupplementaryElement: element)
-        case .none:
-            return self.layoutAttributes(forSupplementaryElement: element)
-        case .disappearance:
-            return self.layoutAttributes(forDisappearingSupplementaryElement: element)
-        }
-    }
     
     func layoutAttributes(forAppearingSupplementaryElement element: Element) -> LayoutAttributes? {
         assert(element.elementKind.isSupplementaryView)
         
         if let dataChange = self.dataChange {
-            if let indexPairBeforeUpdate = dataChange.indexPairBeforeUpdate(for: element.indexPair),
-                !dataChange.willReload(element.indexPair, state: .afterUpdate) {
+            let reload = dataChange.willReload(element.indexPair, state: .afterUpdate)
+            
+            if let indexPairBeforeUpdate = dataChange.indexPairBeforeUpdate(for: element.indexPair), !reload {
                 return self.stickyController(.beforeUpdate)?.layoutAttributes(for: Element(indexPair: indexPairBeforeUpdate, elementKind: element.elementKind))?.withIndexPair(element.indexPair)
                 
             } else {
-                switch (self.layoutModel(.afterUpdate)?.transitionAnimation(for: element) ?? .none) {
+                let transition: ElementTransition = reload ? .reload : .insertion
+                
+                switch self.transitionAnimation(for: element, transition: transition, state: .afterUpdate) {
+                    
                 case .none:
                     return self.stickyController(.afterUpdate)?.layoutAttributes(for: element)
                 case .opacity:
                     return self.stickyController(.afterUpdate)?.layoutAttributes(for: element)?.with(alpha: 0)
                     
                 case .custom:
-                    return self.layoutModel(.afterUpdate)?.initialLayoutAttributes(forAdditionalInsertedSupplementaryViewOfKind: element.elementKind.representedElementKind!, at: element.indexPair)
+                    return self.layoutModel(.afterUpdate)?.initialLayoutAttributes(forAdditionalInsertedSupplementaryViewOfKind: element.elementKind.representedElementKind!, at: element.indexPair, isReloading: reload).flatMap {
+                        self.stickyController(.afterUpdate)?.stickify($0)
+                    }
                 }
             }
         }
@@ -284,10 +283,15 @@ class LayoutController<ModelType: LayoutModel> {
         assert(element.elementKind.isSupplementaryView)
         
         if let dataChange = self.dataChange {
-            if dataChange.indexPairAfterUpdate(for: element.indexPair) != nil {
-                return nil
+            let reload = dataChange.willReload(element.indexPair, state: .beforeUpdate)
+            
+            if let indexPairAfterUpdate = dataChange.indexPairAfterUpdate(for: element.indexPair), !reload {
+                return self.stickyController(.afterUpdate)?.layoutAttributes(for: Element(indexPair: indexPairAfterUpdate,
+                                                                                          elementKind: element.elementKind))?.withIndexPair(element.indexPair)
             } else {
-                switch (self.layoutModel(.beforeUpdate)?.transitionAnimation(for: element) ?? .none)  {
+                let transition: ElementTransition = reload ? .reload : .deletion
+                
+                switch self.transitionAnimation(for: element, transition: transition, state: .beforeUpdate)  {
                 case .none:
                     var layoutAttrs = self.stickyController(.beforeUpdate)?.layoutAttributes(for: element)
                     
@@ -302,7 +306,11 @@ class LayoutController<ModelType: LayoutModel> {
                     return layoutAttrs
                     
                 case .custom:
-                    return self.layoutModel(.beforeUpdate)?.finalLayoutAttributes(forAdditionalDeletedSupplementaryViewOfKind: element.elementKind.representedElementKind!, at: element.indexPair)
+                    return self.layoutModel(.beforeUpdate)?.finalLayoutAttributes(forAdditionalDeletedSupplementaryViewOfKind: element.elementKind.representedElementKind!, at: element.indexPair, isReloading: reload).flatMap {
+                        var attrs = self.stickyController(.beforeUpdate)?.stickify($0)
+                        attrs?.zIndex += 1
+                        return attrs
+                    }
                 }
             }
         }
