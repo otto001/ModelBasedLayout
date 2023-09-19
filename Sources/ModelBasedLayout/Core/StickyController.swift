@@ -15,6 +15,8 @@ class StickyController {
     private var cachedAttributes: [Element: LayoutAttributes] = [:]
     private var invalidationMap: ChunkedRectMap<Element>
     
+    private var lastInvalidatedBounds: CGRect = .zero
+    
     private var isBeingTransitionOut: Bool = false
     
     private(set) var usesStickyViews: Bool = false
@@ -31,6 +33,14 @@ class StickyController {
     
     func willBeReplaced() {
         self.isBeingTransitionOut = true
+    }
+    
+    func shouldInvalidateLayout(forBoundsChange newBounds: CGRect) -> Bool {
+        if self.usesStickyViews && self.lastInvalidatedBounds != newBounds {
+            self.lastInvalidatedBounds = newBounds
+            return true
+        }
+        return false
     }
     
     private func bounds(for stickyAttributes: StickyAttributes) -> CGRect {
@@ -84,7 +94,6 @@ class StickyController {
         
         return newAttrs
     }
-    
 
     func layoutAttributes(for element: Element) -> LayoutAttributes? {
         return self.baseLayoutAttributes(for: element).map {self.stickify($0)}

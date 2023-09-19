@@ -14,8 +14,6 @@ class LayoutController<ModelType: LayoutModel> {
     
     private var dataChange: DataBatchUpdate? = nil
     
-    private var lastInvalidatedBounds: CGRect? = nil
-    
     private var targetContentOffsetAdjustment: CGPoint = .zero
     
     private(set) var boundsProvider: () -> CGRect
@@ -155,7 +153,7 @@ class LayoutController<ModelType: LayoutModel> {
         
         guard let before = self.container.layout(.beforeUpdate),
               let after = self.container.layout(.afterUpdate),
-            let result = self.targetContentOffset(from: before, to: after) else {
+              let result = self.targetContentOffset(from: before, to: after) else {
             return proposedContentOffset
             
         }
@@ -168,11 +166,11 @@ class LayoutController<ModelType: LayoutModel> {
         if newBounds.size != self.geometryInfo(.afterUpdate)?.viewSize {
             return true
         }
-        // TODO: move this logic into the sticky controller
-        if self.usesStickyViews() && self.lastInvalidatedBounds != newBounds {
-            self.lastInvalidatedBounds = newBounds
+        
+        if self.stickyController(.afterUpdate)?.shouldInvalidateLayout(forBoundsChange: newBounds) == true {
             return true
         }
+        
         return false
     }
     
