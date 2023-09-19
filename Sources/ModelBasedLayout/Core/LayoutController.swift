@@ -12,7 +12,6 @@ class LayoutController<ModelType: LayoutModel> {
     
     private let container: LayoutStateTransitionController<ModelType>
     
-    private var replaceModelOnPrepare: Bool = false
     private var dataChange: DataBatchUpdate? = nil
     
     private var lastInvalidatedBounds: CGRect? = nil
@@ -60,11 +59,11 @@ class LayoutController<ModelType: LayoutModel> {
     
     // MARK: Prepare
     func prepare() {
-        if self.layoutModel(.afterUpdate) == nil || self.replaceModelOnPrepare {
+        if self.layoutModel(.afterUpdate) == nil {
             self.container.pushNewLayout()
         }
-
-        self.replaceModelOnPrepare = false
+        self.boundsController(.afterUpdate)?.updateBoundsIfNeeded()
+        //self.replaceModelOnPrepare = false
         
         self.targetContentOffsetAdjustment = .zero
     }
@@ -77,6 +76,7 @@ class LayoutController<ModelType: LayoutModel> {
     func finalize() {
         self.container.clearLayoutBefore()
         self.dataChange = nil
+        self.targetContentOffsetAdjustment = .zero
     }
     
     private func usesStickyViews() -> Bool {
@@ -89,10 +89,6 @@ class LayoutController<ModelType: LayoutModel> {
                                             contentOffset: CGPoint) -> CGSize {
         
         guard contentSizeBefore > .zero && contentSizeAfter > .zero  else { return .zero }
-        
-//        if let target = self.targetContentOffset() {
-//            return (target - contentOffset).cgSize
-//        }
         
         let currentContentOffset = contentOffset.cgSize
 
@@ -110,10 +106,9 @@ class LayoutController<ModelType: LayoutModel> {
     }
     
 
-    private func contentOffsetAnchor() -> IndexPair? {
-        let state: LayoutState = self.container.isTransitioning ? .beforeUpdate : .afterUpdate
-        guard let bounds = self.boundsController(state)?.bounds,
-              let model = self.layoutModel(state) else { return nil }
+    private func contentOffsetAnchor(for container: LayoutContainer<ModelType>) -> IndexPair? {
+        let bounds = container.boundsController.bounds
+        let model = container.model
         let center = CGPoint(x: bounds.midX, y: bounds.maxY)
         let rectSize: CGFloat = 10
         let centerRect = CGRect(x: center.x - rectSize/2, y: center.y - rectSize/2, width: rectSize, height: rectSize)
@@ -124,39 +119,47 @@ class LayoutController<ModelType: LayoutModel> {
             .first { $0.frame.intersects(centerRect) }?.indexPair
     }
     
-    func targetContentOffset() -> CGPoint? {
-        guard let anchorIndexPairBeforeUpdate = self.contentOffsetAnchor() else { return nil }
-        let anchorIndexPairAfterUpdate = self.dataChange?.indexPairAfterUpdate(for: anchorIndexPairBeforeUpdate) ?? anchorIndexPairBeforeUpdate
-        
-        
-        guard let geometryInfo = self.geometryInfo(.afterUpdate),
-              let oldBounds = self.boundsController(.beforeUpdate)?.bounds,
-              let contentSize = self.layoutModel(.afterUpdate)?.contentSize,
-              let oldOffset = self.layoutModel(.beforeUpdate)?.layoutAttributes(forCellAt: anchorIndexPairBeforeUpdate)?.center,
-              let newOffet = self.layoutModel(.afterUpdate)?.layoutAttributes(forCellAt: anchorIndexPairAfterUpdate)?.center
-        else { return nil }
-        
-        let offsetDiff = CGPoint(x: newOffet.x - oldOffset.x, y: newOffet.y - oldOffset.y)
-        
+    func targetContentOffset(from originContainer: LayoutContainer<ModelType>, to targetContainer: LayoutContainer<ModelType>) -> CGPoint? {
+        let oldBounds = originContainer.boundsController.bounds
         let newBounds = self.boundsProvider()
         
-        let minContentOffset = CGPoint(x: -geometryInfo.adjustedContentInset.left,
-                                       y: -geometryInfo.adjustedContentInset.top)
+        guard oldBounds.size > .zero && newBounds.size > .zero else { return nil }
         
-        let maxContentOffset = CGPoint(x: contentSize.width + geometryInfo.adjustedContentInset.right - newBounds.width,
-                                       y: contentSize.height + geometryInfo.adjustedContentInset.bottom - newBounds.height)
+        guard let anchorIndexPairBeforeUpdate = self.contentOffsetAnchor(for: originContainer) else { return nil }
+        let anchorIndexPairAfterUpdate = self.dataChange?.indexPairAfterUpdate(for: anchorIndexPairBeforeUpdate) ?? anchorIndexPairBeforeUpdate
         
-        let result = CGPoint(x: max(minContentOffset.x, min(maxContentOffset.x, oldBounds.minX + offsetDiff.x)),
-                       y: max(minContentOffset.y, min(maxContentOffset.y, oldBounds.minY + offsetDiff.y)))
+        guard let oldAnchorPosition = originContainer.model.layoutAttributes(forCellAt: anchorIndexPairBeforeUpdate)?.center,
+              let newAnchorPosition = targetContainer.model.layoutAttributes(forCellAt: anchorIndexPairAfterUpdate)?.center
+        else { return nil }
+
+        
+        let contentSize = targetContainer.model.contentSize
+        
+        let targetInsets = targetContainer.geometryInfo.adjustedContentInset
+        
+        let oldFractionalPosition = (oldAnchorPosition - oldBounds.origin) / oldBounds.size.cgPoint
+        let newContentOffset = newAnchorPosition - oldFractionalPosition * newBounds.size.cgPoint
+        
+        let minContentOffset = CGPoint(x: -targetInsets.left,
+                                       y: -targetInsets.top)
+        let maxContentOffset = CGPoint(x: contentSize.width + targetInsets.right - newBounds.width,
+                                       y: contentSize.height + targetInsets.bottom - newBounds.height)
+        
+        let result = CGPoint(x: max(minContentOffset.x, min(maxContentOffset.x, newContentOffset.x)),
+                       y: max(minContentOffset.y, min(maxContentOffset.y, newContentOffset.y)))
         
         return result
     }
     
     func targetContentOffset(forProposedContentOffset proposedContentOffset: CGPoint) -> CGPoint {
-        return proposedContentOffset
         
-        guard let result = self.targetContentOffset() else { return proposedContentOffset }
-        self.targetContentOffsetAdjustment = result - proposedContentOffset
+        guard let before = self.container.layout(.beforeUpdate),
+              let after = self.container.layout(.afterUpdate),
+            let result = self.targetContentOffset(from: before, to: after) else {
+            return proposedContentOffset
+            
+        }
+        self.targetContentOffsetAdjustment = proposedContentOffset - result
         return result
     }
     
@@ -188,14 +191,17 @@ class LayoutController<ModelType: LayoutModel> {
             context.invalidateModel = true
             
             let newLayout = self.container.makeNewLayout(forNewBounds: newBounds)
-            
             context.contentSizeAdjustment = newLayout.model.contentSize - currentModel.contentSize
-            context.contentOffsetAdjustment = self.getContentOffsetAdjustment(contentSizeBefore: currentModel.contentSize,
-                                                                              geometryBefore: geometryBefore,
-                                                                              contentSizeAfter: newLayout.model.contentSize,
-                                                                              geometryAfter: newLayout.geometryInfo,
-                                                                              contentOffset: boundsProvider().origin).cgPoint
             
+            if let target = self.targetContentOffset(from: self.container.layout(.afterUpdate)!, to: newLayout) {
+                context.contentOffsetAdjustment = (target - boundsProvider().origin)
+            } else {
+                context.contentOffsetAdjustment = self.getContentOffsetAdjustment(contentSizeBefore: currentModel.contentSize,
+                                                                                  geometryBefore: geometryBefore,
+                                                                                  contentSizeAfter: newLayout.model.contentSize,
+                                                                                  geometryAfter: newLayout.geometryInfo,
+                                                                                  contentOffset: boundsProvider().origin).cgPoint
+            }
         }
         
         if self.usesStickyViews(), let stickyController = self.stickyController(.afterUpdate) {
@@ -207,9 +213,9 @@ class LayoutController<ModelType: LayoutModel> {
     
     func invalidateLayout(with context: InvalidationContext) {
         if context.invalidateDataSourceCounts || context.invalidateEverything || context.invalidateModel  {
-            self.boundsController(.afterUpdate)?.freeze()
-            self.stickyController(.afterUpdate)?.willBeReplaced()
-            self.replaceModelOnPrepare = true
+            self.container.pushNewLayout()
+            self.boundsController(.beforeUpdate)?.freeze()
+            self.stickyController(.beforeUpdate)?.willBeReplaced()
         }
         
         self.boundsController(.afterUpdate)?.invalidate()
