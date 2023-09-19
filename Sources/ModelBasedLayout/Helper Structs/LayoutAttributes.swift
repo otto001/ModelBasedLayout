@@ -136,4 +136,10 @@ public struct LayoutAttributes {
         }
         return frame.intersects(rect)
     }
+    
+    public func offset(by point: CGPoint) -> Self {
+        var copy = self
+        copy.frame = copy.frame.offsetBy(dx: point.x, dy: point.y)
+        return copy
+    }
 }

@@ -11,7 +11,7 @@ import UIKit
 
 // MARK: ModelBasedCollectionViewLayout
 public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectionViewLayout {
-
+    public class override var invalidationContextClass: AnyClass { InvalidationContext.self }
     
     private var controller: LayoutController<ModelType>!
     
@@ -110,8 +110,9 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
 
     // MARK: Invalidation
     public final func invalidateModel() {
-        self.controller.needsToReplaceModel()
-        self.invalidateLayout()
+        let context = InvalidationContext()
+        context.invalidateModel = true
+        self.invalidateLayout(with: context)
     }
     
     public override final func invalidateLayout() {
@@ -122,13 +123,13 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
     public override final func invalidateLayout(with context: UICollectionViewLayoutInvalidationContext) {
         super.invalidateLayout(with: context)
 
-        self.controller.invalidateLayout(with: context)
+        self.controller.invalidateLayout(with: context as! InvalidationContext)
     }
     
     public override final func invalidationContext(forBoundsChange newBounds: CGRect) -> UICollectionViewLayoutInvalidationContext {
         let context = super.invalidationContext(forBoundsChange: newBounds)
         
-        self.controller.configureInvalidationContext(forBoundsChange: newBounds, with: context)
+        self.controller.configureInvalidationContext(forBoundsChange: newBounds, with: context as! InvalidationContext)
         
         return context
     }
@@ -137,6 +138,10 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
     public override final func shouldInvalidateLayout(forBoundsChange newBounds: CGRect) -> Bool {
         //print("shouldInvalidateLayout", newBounds)
         return self.controller.shouldInvalidateLayout(forBoundsChange: newBounds) || super.shouldInvalidateLayout(forBoundsChange: newBounds)
+    }
+    
+    public override final func targetContentOffset(forProposedContentOffset proposedContentOffset: CGPoint) -> CGPoint {
+        return self.controller.targetContentOffset(forProposedContentOffset: proposedContentOffset)
     }
     
     // MARK: Attrs in Rect

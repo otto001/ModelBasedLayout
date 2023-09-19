@@ -9,58 +9,32 @@ import UIKit
 
 class StickyController {
     
-    private var boundsProvider: () -> CGRect
+    private var boundsController: BoundsController
     private var layoutAttributesProvider: (_ element: Element) -> LayoutAttributes?
     
     private var cachedAttributes: [Element: LayoutAttributes] = [:]
     private var invalidationMap: ChunkedRectMap<Element>
     
-    private var bounds: CGRect = .zero
-    private var safeAreaInsets: UIEdgeInsets
-    private var visibleBounds: CGRect = .zero
-    
-    private var visibleBoundsValid: Bool = false
-    private(set) var isBeingTransitionOut: Bool = false
+    private var isBeingTransitionOut: Bool = false
     
     private(set) var usesStickyViews: Bool = false
     
     init(dataSourceCounts: DataSourceCounts,
-         geometryInfo: GeometryInfo,
-         boundsProvider: @escaping () -> CGRect,
+         boundsController: BoundsController,
          layoutAttributesProvider: @escaping (_ element: Element) -> LayoutAttributes?) {
         
-        self.boundsProvider = boundsProvider
+        self.boundsController = boundsController
         self.layoutAttributesProvider = layoutAttributesProvider
         
-        self.safeAreaInsets = geometryInfo.safeAreaInsets
-        self.invalidationMap = .init(chunkSize: boundsProvider().size)
-        self.updateVisibleBoundsIfNeeded()
+        self.invalidationMap = .init(chunkSize: boundsController.bounds.size)
     }
     
-    func invalidateVisibleBounds() {
-        self.visibleBoundsValid = false
-    }
-    
-    func updateVisibleBoundsIfNeeded() {
-        guard !self.visibleBoundsValid && !self.isBeingTransitionOut else { return }
-        
-        let newBounds = self.boundsProvider()
-        
-        guard newBounds.size == self.bounds.size || self.bounds.size == .zero else {
-            self.isBeingTransitionOut = true
-            return
-        }
-        
-        self.bounds = newBounds
-        self.visibleBounds = CGRect(x: self.bounds.minX + self.safeAreaInsets.left,
-                                    y: self.bounds.minY + self.safeAreaInsets.top,
-                                    width: self.bounds.width - self.safeAreaInsets.left - self.safeAreaInsets.right,
-                                    height: self.bounds.height - self.safeAreaInsets.top - self.safeAreaInsets.bottom)
-        self.visibleBoundsValid = true
+    func willBeReplaced() {
+        self.isBeingTransitionOut = true
     }
     
     private func bounds(for stickyAttributes: StickyAttributes) -> CGRect {
-        (stickyAttributes.useSafeAreaInsets ? self.visibleBounds : self.bounds).inset(by: stickyAttributes.additionalInsets)
+        (stickyAttributes.useSafeAreaInsets ? self.boundsController.visibleBounds : self.boundsController.bounds).inset(by: stickyAttributes.additionalInsets)
     }
     
     private func baseLayoutAttributes(for element: Element) -> LayoutAttributes? {
@@ -84,7 +58,6 @@ class StickyController {
         guard attrs.isSticky && attrs.frame.width > 0 && attrs.frame.height > 0 else { return attrs }
         
         let stickyAttrs = attrs.stickyAttributes!
-        self.updateVisibleBoundsIfNeeded()
         
         var newAttrs = attrs
         
@@ -114,13 +87,11 @@ class StickyController {
     
 
     func layoutAttributes(for element: Element) -> LayoutAttributes? {
-        self.updateVisibleBoundsIfNeeded()
         return self.baseLayoutAttributes(for: element).map {self.stickify($0)}
     }
 
     func configureInvalidationContext(forBoundsChange newBounds: CGRect, with context: UICollectionViewLayoutInvalidationContext) {
-        let rect = boundsProvider().union(newBounds)
-        self.updateVisibleBoundsIfNeeded()
+        let rect = self.boundsController.bounds.union(newBounds)
         
         let result = self.invalidationMap.query(rect).map {
             self.cachedAttributes[$0]!

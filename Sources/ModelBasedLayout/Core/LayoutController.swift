@@ -10,12 +10,14 @@ import UIKit
 
 class LayoutController<ModelType: LayoutModel> {
     
-    private let container: LayoutContainer<ModelType>
+    private let container: LayoutStateTransitionController<ModelType>
     
-    private var prepareActions: PrepareActions = []
+    private var replaceModelOnPrepare: Bool = false
     private var dataChange: DataBatchUpdate? = nil
     
     private var lastInvalidatedBounds: CGRect? = nil
+    
+    private var targetContentOffsetAdjustment: CGPoint = .zero
     
     private(set) var boundsProvider: () -> CGRect
     
@@ -45,8 +47,8 @@ class LayoutController<ModelType: LayoutModel> {
         self.container.layout(state)?.stickyController
     }
     
-    func needsToReplaceModel() {
-        self.prepareActions.insert(.replaceModel)
+    private func boundsController(_ state: LayoutState) -> BoundsController? {
+        self.container.layout(state)?.boundsController
     }
     
     var collectionViewContentSize: CGSize {
@@ -58,14 +60,13 @@ class LayoutController<ModelType: LayoutModel> {
     
     // MARK: Prepare
     func prepare() {
-        if self.layoutModel(.afterUpdate) == nil || prepareActions.contains(.replaceModel) {
+        if self.layoutModel(.afterUpdate) == nil || self.replaceModelOnPrepare {
             self.container.pushNewLayout()
         }
+
+        self.replaceModelOnPrepare = false
         
-        assert(self.stickyController(.afterUpdate)?.isBeingTransitionOut != true)
-        //self.stickyController(.afterUpdate)?.unfreezeLayoutAttributes()
-        
-        self.prepareActions = []
+        self.targetContentOffsetAdjustment = .zero
     }
     
     func prepare(forCollectionViewUpdates updateItems: [UICollectionViewUpdateItem]) {
@@ -78,30 +79,85 @@ class LayoutController<ModelType: LayoutModel> {
         self.dataChange = nil
     }
     
+    private func usesStickyViews() -> Bool {
+        self.stickyController(.afterUpdate)?.usesStickyViews ?? false
+    }
     
+    // MARK: Content Offset Adjustment
     private func getContentOffsetAdjustment(contentSizeBefore: CGSize, geometryBefore: GeometryInfo,
                                             contentSizeAfter: CGSize, geometryAfter: GeometryInfo,
                                             contentOffset: CGPoint) -> CGSize {
         
         guard contentSizeBefore > .zero && contentSizeAfter > .zero  else { return .zero }
         
+//        if let target = self.targetContentOffset() {
+//            return (target - contentOffset).cgSize
+//        }
+        
         let currentContentOffset = contentOffset.cgSize
-        
-        
+
+
         let halfBoundsSizeBefore = (geometryBefore.viewSize/2)
         let halfBoundsSizeAfter = (geometryAfter.viewSize/2)
-        
+
         let insetBefore = CGSize(width: geometryBefore.adjustedContentInset.left, height: geometryBefore.adjustedContentInset.top)
         let insetAfter = CGSize(width: geometryAfter.adjustedContentInset.left, height: geometryAfter.adjustedContentInset.top)
         let insetDiff = insetBefore - insetAfter
-        
+
         let scrollRatio = (currentContentOffset + halfBoundsSizeBefore - insetDiff) / contentSizeBefore
-        
+
         return (scrollRatio * contentSizeAfter - halfBoundsSizeAfter) - currentContentOffset
     }
     
-    private func usesStickyViews() -> Bool {
-        self.stickyController(.afterUpdate)?.usesStickyViews ?? false
+
+    private func contentOffsetAnchor() -> IndexPair? {
+        let state: LayoutState = self.container.isTransitioning ? .beforeUpdate : .afterUpdate
+        guard let bounds = self.boundsController(state)?.bounds,
+              let model = self.layoutModel(state) else { return nil }
+        let center = CGPoint(x: bounds.midX, y: bounds.maxY)
+        let rectSize: CGFloat = 10
+        let centerRect = CGRect(x: center.x - rectSize/2, y: center.y - rectSize/2, width: rectSize, height: rectSize)
+        
+        return model.elements(in: centerRect)
+            .filter { $0.elementKind == .cell }
+            .compactMap { model.layoutAttributes(forCellAt: $0.indexPair) }
+            .first { $0.frame.intersects(centerRect) }?.indexPair
+    }
+    
+    func targetContentOffset() -> CGPoint? {
+        guard let anchorIndexPairBeforeUpdate = self.contentOffsetAnchor() else { return nil }
+        let anchorIndexPairAfterUpdate = self.dataChange?.indexPairAfterUpdate(for: anchorIndexPairBeforeUpdate) ?? anchorIndexPairBeforeUpdate
+        
+        
+        guard let geometryInfo = self.geometryInfo(.afterUpdate),
+              let oldBounds = self.boundsController(.beforeUpdate)?.bounds,
+              let contentSize = self.layoutModel(.afterUpdate)?.contentSize,
+              let oldOffset = self.layoutModel(.beforeUpdate)?.layoutAttributes(forCellAt: anchorIndexPairBeforeUpdate)?.center,
+              let newOffet = self.layoutModel(.afterUpdate)?.layoutAttributes(forCellAt: anchorIndexPairAfterUpdate)?.center
+        else { return nil }
+        
+        let offsetDiff = CGPoint(x: newOffet.x - oldOffset.x, y: newOffet.y - oldOffset.y)
+        
+        let newBounds = self.boundsProvider()
+        
+        let minContentOffset = CGPoint(x: -geometryInfo.adjustedContentInset.left,
+                                       y: -geometryInfo.adjustedContentInset.top)
+        
+        let maxContentOffset = CGPoint(x: contentSize.width + geometryInfo.adjustedContentInset.right - newBounds.width,
+                                       y: contentSize.height + geometryInfo.adjustedContentInset.bottom - newBounds.height)
+        
+        let result = CGPoint(x: max(minContentOffset.x, min(maxContentOffset.x, oldBounds.minX + offsetDiff.x)),
+                       y: max(minContentOffset.y, min(maxContentOffset.y, oldBounds.minY + offsetDiff.y)))
+        
+        return result
+    }
+    
+    func targetContentOffset(forProposedContentOffset proposedContentOffset: CGPoint) -> CGPoint {
+        return proposedContentOffset
+        
+        guard let result = self.targetContentOffset() else { return proposedContentOffset }
+        self.targetContentOffsetAdjustment = result - proposedContentOffset
+        return result
     }
     
     // MARK: Invalidation
@@ -117,7 +173,11 @@ class LayoutController<ModelType: LayoutModel> {
         return false
     }
     
-    func configureInvalidationContext(forBoundsChange newBounds: CGRect, with context: UICollectionViewLayoutInvalidationContext) {
+    func configureInvalidationContext(forBoundsChange newBounds: CGRect, with context: InvalidationContext) {
+        let boundsController = self.boundsController(.afterUpdate)
+        assert(boundsController?.frozen != true)
+        boundsController?.freeze()
+        
         if let geometryBefore = self.geometryInfo(.afterUpdate),
            newBounds.size != geometryBefore.viewSize,
            let currentModel = self.layoutModel(.afterUpdate),
@@ -125,6 +185,7 @@ class LayoutController<ModelType: LayoutModel> {
             // viewSize change
             
             
+            context.invalidateModel = true
             
             let newLayout = self.container.makeNewLayout(forNewBounds: newBounds)
             
@@ -139,16 +200,19 @@ class LayoutController<ModelType: LayoutModel> {
         
         if self.usesStickyViews(), let stickyController = self.stickyController(.afterUpdate) {
             stickyController.configureInvalidationContext(forBoundsChange: newBounds, with: context)
-            
-        }
-    }
-    
-    func invalidateLayout(with context: UICollectionViewLayoutInvalidationContext) {
-        if context.invalidateDataSourceCounts || context.invalidateEverything || context.contentSizeAdjustment != .zero  || context.contentOffsetAdjustment != .zero  {
-            self.needsToReplaceModel()
         }
         
-        self.stickyController(.afterUpdate)?.invalidateVisibleBounds()
+        boundsController?.unfreeze()
+    }
+    
+    func invalidateLayout(with context: InvalidationContext) {
+        if context.invalidateDataSourceCounts || context.invalidateEverything || context.invalidateModel  {
+            self.boundsController(.afterUpdate)?.freeze()
+            self.stickyController(.afterUpdate)?.willBeReplaced()
+            self.replaceModelOnPrepare = true
+        }
+        
+        self.boundsController(.afterUpdate)?.invalidate()
     }
     
     // MARK: Animations
@@ -192,12 +256,11 @@ class LayoutController<ModelType: LayoutModel> {
                 
                 switch self.transitionAnimation(for: .cell(indexPair), transition: transition, state: .afterUpdate) {
                 case .none:
-                    return self.layoutModel(.afterUpdate)?.layoutAttributes(forCellAt: indexPair)
+                    return self.layoutModel(.afterUpdate)?.layoutAttributes(forCellAt: indexPair)?.offset(by: self.targetContentOffsetAdjustment)
                 case .opacity:
-                    return self.layoutModel(.afterUpdate)?.layoutAttributes(forCellAt: indexPair)?.with(alpha: 0)
-                    
+                    return self.layoutModel(.afterUpdate)?.layoutAttributes(forCellAt: indexPair)?.with(alpha: 0).offset(by: self.targetContentOffsetAdjustment)
                 case .custom:
-                    return self.layoutModel(.afterUpdate)?.initialLayoutAttributes(forInsertedItemAt: indexPair)
+                    return self.layoutModel(.afterUpdate)?.initialLayoutAttributes(forInsertedItemAt: indexPair)?.offset(by: self.targetContentOffsetAdjustment)
                 }
             }
         }
@@ -258,14 +321,14 @@ class LayoutController<ModelType: LayoutModel> {
                 switch self.transitionAnimation(for: element, transition: transition, state: .afterUpdate) {
                     
                 case .none:
-                    return self.stickyController(.afterUpdate)?.layoutAttributes(for: element)
+                    return self.stickyController(.afterUpdate)?.layoutAttributes(for: element)?.offset(by: self.targetContentOffsetAdjustment)
                 case .opacity:
-                    return self.stickyController(.afterUpdate)?.layoutAttributes(for: element)?.with(alpha: 0)
+                    return self.stickyController(.afterUpdate)?.layoutAttributes(for: element)?.with(alpha: 0).offset(by: self.targetContentOffsetAdjustment)
                     
                 case .custom:
                     return self.layoutModel(.afterUpdate)?.initialLayoutAttributes(forAdditionalInsertedSupplementaryViewOfKind: element.elementKind.representedElementKind!, at: element.indexPair, isReloading: reload).flatMap {
                         self.stickyController(.afterUpdate)?.stickify($0)
-                    }
+                    }?.offset(by: self.targetContentOffsetAdjustment)
                 }
             }
         }
