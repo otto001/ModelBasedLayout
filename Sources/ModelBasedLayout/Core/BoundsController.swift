@@ -13,7 +13,14 @@ class BoundsController {
     private var boundsProvider: () -> CGRect
     private(set) var safeAreaInsets: UIEdgeInsets = .zero
     
-    private var _bounds: CGRect = .zero
+    private var _bounds: CGRect = .zero {
+        didSet {
+            self._visibleBounds = CGRect(x: self._bounds.minX + self.safeAreaInsets.left,
+                                         y:  self._bounds.minY + self.safeAreaInsets.top,
+                                         width:  self._bounds.width - self.safeAreaInsets.left - self.safeAreaInsets.right,
+                                         height:  self._bounds.height - self.safeAreaInsets.top - self.safeAreaInsets.bottom)
+        }
+    }
     private var _visibleBounds: CGRect = .zero
     
     private var valid: Bool = false
@@ -57,10 +64,12 @@ class BoundsController {
         }
         
         self._bounds = newBounds
-        self._visibleBounds = CGRect(x: newBounds.minX + self.safeAreaInsets.left,
-                                     y: newBounds.minY + self.safeAreaInsets.top,
-                                     width: newBounds.width - self.safeAreaInsets.left - self.safeAreaInsets.right,
-                                     height: newBounds.height - self.safeAreaInsets.top - self.safeAreaInsets.bottom)
         self.valid = true
     }
+    
+    func setTargetContentOffset(target contentOffset: CGPoint) {
+        self._bounds = CGRect(origin: contentOffset, size: self._bounds.size)
+        self.valid = true
+    }
+    
 }

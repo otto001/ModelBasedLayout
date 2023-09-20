@@ -14,6 +14,7 @@ class LayoutController<ModelType: LayoutModel> {
     
     private var dataChange: DataBatchUpdate? = nil
     
+    private var targetContentOffset: CGPoint? = nil
     private var targetContentOffsetAdjustment: CGPoint = .zero
     
     private(set) var boundsProvider: () -> CGRect
@@ -69,12 +70,19 @@ class LayoutController<ModelType: LayoutModel> {
     func prepare(forCollectionViewUpdates updateItems: [UICollectionViewUpdateItem]) {
         guard !updateItems.isEmpty else { return }
         self.dataChange = DataBatchUpdate(dataSourceCounts: self.dataSourceCounts(.beforeUpdate)!, updateItems: updateItems)
+        
+        self.prepareTargetContentOffset()
+        
+        if let targetContentOffset = self.targetContentOffset {
+            self.boundsController(.afterUpdate)?.setTargetContentOffset(target: targetContentOffset)
+        }
     }
     
     func finalize() {
         self.container.clearLayoutBefore()
         self.dataChange = nil
         self.targetContentOffsetAdjustment = .zero
+        self.targetContentOffset = nil
     }
     
     private func usesStickyViews() -> Bool {
@@ -150,15 +158,26 @@ class LayoutController<ModelType: LayoutModel> {
     }
     
     func targetContentOffset(forProposedContentOffset proposedContentOffset: CGPoint) -> CGPoint {
+        if targetContentOffset == nil {
+            self.prepareTargetContentOffset()
+        }
         
+        guard let targetContentOffset = self.targetContentOffset else {
+            return proposedContentOffset
+        }
+        
+        self.targetContentOffsetAdjustment = targetContentOffset - targetContentOffset
+        return targetContentOffset
+    }
+    
+    func prepareTargetContentOffset() {
         guard let before = self.container.layout(.beforeUpdate),
               let after = self.container.layout(.afterUpdate),
               let result = self.targetContentOffset(from: before, to: after) else {
-            return proposedContentOffset
+            return
             
         }
-        self.targetContentOffsetAdjustment = proposedContentOffset - result
-        return result
+        self.targetContentOffset = result
     }
     
     // MARK: Invalidation
