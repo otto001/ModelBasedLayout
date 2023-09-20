@@ -16,16 +16,8 @@ public protocol LayoutModel {
     
     func elements(in rect: CGRect) -> [Element]
     
-    func layoutAttributes(forCellAt indexPair: IndexPair) -> LayoutAttributes?
-    func initialLayoutAttributes(forInsertedItemAt indexPair: IndexPair) -> LayoutAttributes?
-    func finalLayoutAttributes(forDeletedItemAt indexPair: IndexPair) -> LayoutAttributes?
-    
-    func layoutAttributes(forHeaderOfSection section: Int) -> LayoutAttributes?
-    func layoutAttributes(forFooterOfSection section: Int) -> LayoutAttributes?
-    
-    func layoutAttributes(forAdditionalSupplementaryViewOfKind elementKind: String, at indexPair: IndexPair) -> LayoutAttributes?
-    func initialLayoutAttributes(forAdditionalInsertedSupplementaryViewOfKind elementKind: String, at indexPair: IndexPair, isReloading: Bool) -> LayoutAttributes?
-    func finalLayoutAttributes(forAdditionalDeletedSupplementaryViewOfKind elementKind: String, at indexPair: IndexPair, isReloading: Bool) -> LayoutAttributes?
+    func layoutAttributes(for element: Element) -> LayoutAttributes?
+    func layoutAttributes(for element: Element, frame: AnimationFrame) -> LayoutAttributes?
 }
 
 public extension LayoutModel {
@@ -34,31 +26,7 @@ public extension LayoutModel {
         return .opacity
     }
     
-    func initialLayoutAttributes(forInsertedItemAt indexPair: IndexPair) -> LayoutAttributes? {
-        return nil
-    }
-    
-    func finalLayoutAttributes(forDeletedItemAt indexPair: IndexPair) -> LayoutAttributes? {
-        return nil
-    }
-    
-    func layoutAttributes(forHeaderOfSection section: Int) -> LayoutAttributes? {
-        return nil
-    }
-    
-    func layoutAttributes(forFooterOfSection section: Int) -> LayoutAttributes? {
-        return nil
-    }
-    
-    func layoutAttributes(forAdditionalSupplementaryViewOfKind elementKind: String, at indexPair: IndexPair) -> LayoutAttributes? {
-        return nil
-    }
-    
-    func initialLayoutAttributes(forAdditionalInsertedSupplementaryViewOfKind elementKind: String, at indexPair: IndexPair, isReloading: Bool) -> LayoutAttributes? {
-        return nil
-    }
-    
-    func finalLayoutAttributes(forAdditionalDeletedSupplementaryViewOfKind elementKind: String, at indexPair: IndexPair, isReloading: Bool) -> LayoutAttributes? {
-        return nil
+    func layoutAttributes(for element: Element, frame: AnimationFrame) -> LayoutAttributes? {
+        return layoutAttributes(for: element)
     }
 }

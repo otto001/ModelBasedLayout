@@ -121,7 +121,7 @@ class LayoutController<ModelType: LayoutModel> {
         
         return model.elements(in: centerRect)
             .filter { $0.elementKind == .cell }
-            .compactMap { model.layoutAttributes(forCellAt: $0.indexPair) }
+            .compactMap { model.layoutAttributes(for: $0) }
             .first { $0.frame.intersects(centerRect) }?.indexPair
     }
     
@@ -134,8 +134,8 @@ class LayoutController<ModelType: LayoutModel> {
         guard let anchorIndexPairBeforeUpdate = self.contentOffsetAnchor(for: originContainer) else { return nil }
         let anchorIndexPairAfterUpdate = self.dataChange?.indexPairAfterUpdate(for: anchorIndexPairBeforeUpdate) ?? anchorIndexPairBeforeUpdate
         
-        guard let oldAnchorPosition = originContainer.model.layoutAttributes(forCellAt: anchorIndexPairBeforeUpdate)?.center,
-              let newAnchorPosition = targetContainer.model.layoutAttributes(forCellAt: anchorIndexPairAfterUpdate)?.center
+        guard let oldAnchorPosition = originContainer.model.layoutAttributes(for: .cell(anchorIndexPairBeforeUpdate))?.center,
+              let newAnchorPosition = targetContainer.model.layoutAttributes(for: .cell(anchorIndexPairAfterUpdate))?.center
         else { return nil }
 
         
@@ -273,27 +273,27 @@ class LayoutController<ModelType: LayoutModel> {
             let reload = dataChange.willReload(indexPair, state: .afterUpdate)
             
             if let indexPairBeforeUpdate = dataChange.indexPairBeforeUpdate(for: indexPair), !reload {
-                return self.layoutModel(.beforeUpdate)!.layoutAttributes(forCellAt: indexPairBeforeUpdate)?.withIndexPair(indexPair)
+                return self.layoutModel(.beforeUpdate)!.layoutAttributes(for: .cell(indexPairBeforeUpdate))?.withIndexPair(indexPair)
             } else {
                 let transition: ElementTransition = reload ? .reload : .insertion
                 
                 switch self.transitionAnimation(for: .cell(indexPair), transition: transition, state: .afterUpdate) {
                 case .none:
-                    return self.layoutModel(.afterUpdate)?.layoutAttributes(forCellAt: indexPair)?.offset(by: self.targetContentOffsetAdjustment)
+                    return self.layoutModel(.afterUpdate)?.layoutAttributes(for: .cell(indexPair))?.offset(by: self.targetContentOffsetAdjustment)
                 case .opacity:
-                    return self.layoutModel(.afterUpdate)?.layoutAttributes(forCellAt: indexPair)?.with(alpha: 0).offset(by: self.targetContentOffsetAdjustment)
+                    return self.layoutModel(.afterUpdate)?.layoutAttributes(for: .cell(indexPair))?.with(alpha: 0).offset(by: self.targetContentOffsetAdjustment)
                 case .custom:
-                    return self.layoutModel(.afterUpdate)?.initialLayoutAttributes(forInsertedItemAt: indexPair)?.offset(by: self.targetContentOffsetAdjustment)
+                    return self.layoutModel(.afterUpdate)?.layoutAttributes(for: .cell(indexPair), frame: .initial(reload: reload))?.offset(by: self.targetContentOffsetAdjustment)
                 }
             }
         }
         
-        let attrs = self.layoutModel(.beforeUpdate)?.layoutAttributes(forCellAt: indexPair)
+        let attrs = self.layoutModel(.beforeUpdate)?.layoutAttributes(for: .cell(indexPair))
         return attrs
     }
     
     func layoutAttributes(forCellAt indexPair: IndexPair) -> LayoutAttributes? {
-        let layoutAttrs = self.layoutModel(.afterUpdate)?.layoutAttributes(forCellAt: indexPair)
+        let layoutAttrs = self.layoutModel(.afterUpdate)?.layoutAttributes(for: .cell(indexPair))
         return layoutAttrs
     }
     
@@ -302,25 +302,25 @@ class LayoutController<ModelType: LayoutModel> {
             let reload = dataChange.willReload(indexPair, state: .beforeUpdate)
             
             if let indexPairAfterUpdate = dataChange.indexPairAfterUpdate(for: indexPair), !reload {
-                return self.layoutModel(.afterUpdate)!.layoutAttributes(forCellAt: indexPairAfterUpdate)?.withIndexPair(indexPair)
+                return self.layoutModel(.afterUpdate)!.layoutAttributes(for: .cell(indexPairAfterUpdate))?.withIndexPair(indexPair)
             } else {
                 let transition: ElementTransition = reload ? .reload : .deletion
                 
                 switch self.transitionAnimation(for: .cell(indexPair), transition: transition, state: .beforeUpdate) {
                 case .none:
-                    return self.layoutModel(.beforeUpdate)?.layoutAttributes(forCellAt: indexPair)
+                    return self.layoutModel(.beforeUpdate)?.layoutAttributes(for: .cell(indexPair))
                     
                 case .opacity:
-                    return self.layoutModel(.beforeUpdate)?.layoutAttributes(forCellAt: indexPair)?.with(alpha: 0)
+                    return self.layoutModel(.beforeUpdate)?.layoutAttributes(for: .cell(indexPair))?.with(alpha: 0)
                     
                 case .custom:
-                    return self.layoutModel(.beforeUpdate)?.finalLayoutAttributes(forDeletedItemAt: indexPair)
+                    return self.layoutModel(.beforeUpdate)?.layoutAttributes(for: .cell(indexPair), frame: .final(reload: reload))
                 }
                 
             }
         }
         
-        let attrs = self.layoutModel(.afterUpdate)?.layoutAttributes(forCellAt: indexPair)
+        let attrs = self.layoutModel(.afterUpdate)?.layoutAttributes(for: .cell(indexPair))
         return attrs
     }
     
@@ -349,7 +349,7 @@ class LayoutController<ModelType: LayoutModel> {
                     return self.stickyController(.afterUpdate)?.layoutAttributes(for: element)?.with(alpha: 0).offset(by: self.targetContentOffsetAdjustment)
                     
                 case .custom:
-                    return self.layoutModel(.afterUpdate)?.initialLayoutAttributes(forAdditionalInsertedSupplementaryViewOfKind: element.elementKind.representedElementKind!, at: element.indexPair, isReloading: reload).flatMap {
+                    return self.layoutModel(.afterUpdate)?.layoutAttributes(for: element, frame: .initial(reload: reload)).flatMap {
                         self.stickyController(.afterUpdate)?.stickify($0)
                     }?.offset(by: self.targetContentOffsetAdjustment)
                 }
@@ -392,7 +392,7 @@ class LayoutController<ModelType: LayoutModel> {
                     return layoutAttrs
                     
                 case .custom:
-                    return self.layoutModel(.beforeUpdate)?.finalLayoutAttributes(forAdditionalDeletedSupplementaryViewOfKind: element.elementKind.representedElementKind!, at: element.indexPair, isReloading: reload).flatMap {
+                    return self.layoutModel(.beforeUpdate)?.layoutAttributes(for: element, frame: .final(reload: reload)).flatMap {
                         var attrs = self.stickyController(.beforeUpdate)?.stickify($0)
                         attrs?.zIndex += 1
                         return attrs

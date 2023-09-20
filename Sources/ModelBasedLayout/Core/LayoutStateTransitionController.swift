@@ -74,16 +74,7 @@ class LayoutStateTransitionController<ModelType: LayoutModel> {
         
         let stickyController = StickyController(dataSourceCounts: dataSourceCounts,
                                                 boundsController: boundsController) { element in
-            switch element.elementKind {
-            case .header:
-                return model.layoutAttributes(forHeaderOfSection: element.indexPair.section)
-            case .footer:
-                return model.layoutAttributes(forFooterOfSection: element.indexPair.section)
-            case .additionalSupplementaryView(let elementKind):
-                return model.layoutAttributes(forAdditionalSupplementaryViewOfKind: elementKind, at: element.indexPair)
-            default:
-                return nil
-            }
+            model.layoutAttributes(for: element)
         }
         
         self.cachedLayout = LayoutContainer(geometryInfo: geometryInfo,
