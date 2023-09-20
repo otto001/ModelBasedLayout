@@ -10,7 +10,7 @@ import UIKit
 
 class LayoutController<ModelType: LayoutModel> {
     
-    private let container: LayoutStateTransitionController<ModelType>
+    private let stateController: LayoutStateController<ModelType>
     
     private var dataChange: DataBatchUpdate? = nil
     
@@ -24,29 +24,29 @@ class LayoutController<ModelType: LayoutModel> {
          geometryInfo: @escaping () -> GeometryInfo,
          boundsProvider: @escaping () -> CGRect) {
         
-        self.container = .init(modelProvider: model, dataSourceCountsProvider: dataSourceCounts, geometryInfoProvider: geometryInfo, boundsProvider: boundsProvider)
+        self.stateController = .init(modelProvider: model, dataSourceCountsProvider: dataSourceCounts, geometryInfoProvider: geometryInfo, boundsProvider: boundsProvider)
         
         self.boundsProvider = boundsProvider
     }
     
     internal func layoutModel(_ state: LayoutState) -> ModelType? {
-        self.container.layout(state)?.model
+        self.stateController.layout(state)?.model
     }
     
     private func dataSourceCounts(_ state: LayoutState) -> DataSourceCounts? {
-        self.container.layout(state)?.dataSourceCounts
+        self.stateController.layout(state)?.dataSourceCounts
     }
     
     private func geometryInfo(_ state: LayoutState) -> GeometryInfo? {
-        self.container.layout(state)?.geometryInfo
+        self.stateController.layout(state)?.geometryInfo
     }
     
     private func stickyController(_ state: LayoutState) -> StickyController? {
-        self.container.layout(state)?.stickyController
+        self.stateController.layout(state)?.stickyController
     }
     
     private func boundsController(_ state: LayoutState) -> BoundsController? {
-        self.container.layout(state)?.boundsController
+        self.stateController.layout(state)?.boundsController
     }
     
     var collectionViewContentSize: CGSize {
@@ -59,7 +59,7 @@ class LayoutController<ModelType: LayoutModel> {
     // MARK: Prepare
     func prepare() {
         if self.layoutModel(.afterUpdate) == nil {
-            self.container.pushNewLayout()
+            self.stateController.pushNewLayout()
         }
         self.boundsController(.afterUpdate)?.updateBoundsIfNeeded()
         //self.replaceModelOnPrepare = false
@@ -79,7 +79,7 @@ class LayoutController<ModelType: LayoutModel> {
     }
     
     func finalize() {
-        self.container.clearLayoutBefore()
+        self.stateController.clearLayoutBefore()
         self.dataChange = nil
         self.targetContentOffsetAdjustment = .zero
         self.targetContentOffset = nil
@@ -171,8 +171,8 @@ class LayoutController<ModelType: LayoutModel> {
     }
     
     func prepareTargetContentOffset() {
-        guard let before = self.container.layout(.beforeUpdate),
-              let after = self.container.layout(.afterUpdate),
+        guard let before = self.stateController.layout(.beforeUpdate),
+              let after = self.stateController.layout(.afterUpdate),
               let result = self.targetContentOffset(from: before, to: after) else {
             return
             
@@ -207,10 +207,10 @@ class LayoutController<ModelType: LayoutModel> {
             
             context.invalidateModel = true
             
-            let newLayout = self.container.makeNewLayout(forNewBounds: newBounds)
+            let newLayout = self.stateController.makeNewLayout(forNewBounds: newBounds)
             context.contentSizeAdjustment = newLayout.model.contentSize - currentModel.contentSize
             
-            if let target = self.targetContentOffset(from: self.container.layout(.afterUpdate)!, to: newLayout) {
+            if let target = self.targetContentOffset(from: self.stateController.layout(.afterUpdate)!, to: newLayout) {
                 context.contentOffsetAdjustment = (target - boundsProvider().origin)
             } else {
                 context.contentOffsetAdjustment = self.getContentOffsetAdjustment(contentSizeBefore: currentModel.contentSize,
@@ -230,7 +230,7 @@ class LayoutController<ModelType: LayoutModel> {
     
     func invalidateLayout(with context: InvalidationContext) {
         if context.invalidateDataSourceCounts || context.invalidateEverything || context.invalidateModel  {
-            self.container.pushNewLayout()
+            self.stateController.pushNewLayout()
             self.boundsController(.beforeUpdate)?.freeze()
             self.stickyController(.beforeUpdate)?.willBeReplaced()
         }

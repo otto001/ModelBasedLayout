@@ -1,5 +1,5 @@
 //
-//  LayoutStateTransitionController.swift
+//  LayoutStateController.swift
 //  
 //
 //  Created by Matteo Ludwig on 31.08.23.
@@ -8,7 +8,7 @@
 import Foundation
 
 
-class LayoutStateTransitionController<ModelType: LayoutModel> {
+class LayoutStateController<ModelType: LayoutModel> {
     
     
     private(set) var modelProvider: (_ dataSourceCounts: DataSourceCounts, _ geometryInfo: GeometryInfo) -> ModelType
