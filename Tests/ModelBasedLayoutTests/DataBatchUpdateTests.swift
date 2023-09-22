@@ -1,6 +1,6 @@
 //
-//  ModelBasedCollectionViewTests.swift
-//  ModelBasedCollectionViewTests
+//  DataBatchUpdateTests.swift
+//  ModelBasedLayoutTests
 //
 //  Created by Matteo Ludwig on 18.07.23.
 //
@@ -59,7 +59,7 @@ final class DataBatchUpdateTests: XCTestCase {
             IndexPair(item: 2, section: 1): nil,
         ]
         
-        for indexPair in dataSourceCounts.indexPairs(startIndex: 0, endIndex: dataSourceCounts.itemsCount) {
+        for indexPair in dataSourceCounts.indexPairs(for: 0...dataSourceCounts.itemsCount-1) {
             XCTAssertEqual(changes.indexPairAfterUpdate(for: indexPair), results[indexPair])
         }
         
@@ -92,7 +92,7 @@ final class DataBatchUpdateTests: XCTestCase {
             IndexPair(item: 1, section: 1): IndexPair(item: 2, section: 1),
         ]
         
-        for indexPair in dataSourceCounts.indexPairs(startIndex: 0, endIndex: dataSourceCounts.itemsCount) {
+        for indexPair in dataSourceCounts.indexPairs(for: 0..<dataSourceCounts.itemsCount) {
             XCTAssertEqual(changes.indexPairAfterUpdate(for: indexPair), results[indexPair])
         }
     }
@@ -130,7 +130,7 @@ final class DataBatchUpdateTests: XCTestCase {
             IndexPair(item: 1, section: 2): IndexPair(item: 1, section: 1),
         ]
         
-        for indexPair in dataSourceCounts.indexPairs(startIndex: 0, endIndex: dataSourceCounts.itemsCount) {
+        for indexPair in dataSourceCounts.indexPairs(for: 0..<dataSourceCounts.itemsCount) {
             XCTAssertEqual(changes.indexPairAfterUpdate(for: indexPair), results[indexPair])
         }
         
@@ -166,7 +166,7 @@ final class DataBatchUpdateTests: XCTestCase {
             IndexPair(item: 1, section: 2): IndexPair(item: 1, section: 1),
         ]
         
-        for indexPair in dataSourceCounts.indexPairs(startIndex: 0, endIndex: dataSourceCounts.itemsCount) {
+        for indexPair in dataSourceCounts.indexPairs(for: 0..<dataSourceCounts.itemsCount) {
             XCTAssertEqual(changes.indexPairAfterUpdate(for: indexPair), results[indexPair])
         }
         
@@ -193,7 +193,7 @@ final class DataBatchUpdateTests: XCTestCase {
             IndexPair(item: 2, section: 1): IndexPair(item: 2, section: 2),
         ]
         
-        for indexPair in dataSourceCounts.indexPairs(startIndex: 0, endIndex: dataSourceCounts.itemsCount) {
+        for indexPair in dataSourceCounts.indexPairs(for: 0..<dataSourceCounts.itemsCount) {
             XCTAssertEqual(changes.indexPairAfterUpdate(for: indexPair), results[indexPair])
         }
         
@@ -234,7 +234,7 @@ final class DataBatchUpdateTests: XCTestCase {
             IndexPair(item: 2, section: 2): IndexPair(item: 2, section: 2),
         ]
         
-        for indexPair in dataSourceCounts.indexPairs(startIndex: 0, endIndex: dataSourceCounts.itemsCount) {
+        for indexPair in dataSourceCounts.indexPairs(for: 0..<dataSourceCounts.itemsCount) {
             XCTAssertEqual(changes.indexPairAfterUpdate(for: indexPair), results[indexPair])
         }
         
@@ -278,7 +278,7 @@ final class DataBatchUpdateTests: XCTestCase {
             IndexPair(item: 4, section: 3): IndexPair(item: 2, section: 3),
         ]
         
-        for indexPair in dataSourceCounts.indexPairs(startIndex: 0, endIndex: dataSourceCounts.itemsCount) {
+        for indexPair in dataSourceCounts.indexPairs(for: 0..<dataSourceCounts.itemsCount) {
             XCTAssertEqual(changes.indexPairAfterUpdate(for: indexPair), results[indexPair])
         }
     }
@@ -302,7 +302,7 @@ final class DataBatchUpdateTests: XCTestCase {
             IndexPair(item: 2, section: 1): IndexPair(item: 3, section: 1),
         ]
         
-        for indexPair in dataSourceCounts.indexPairs(startIndex: 0, endIndex: dataSourceCounts.itemsCount) {
+        for indexPair in dataSourceCounts.indexPairs(for: 0..<dataSourceCounts.itemsCount) {
             XCTAssertEqual(changes.indexPairAfterUpdate(for: indexPair), results[indexPair])
         }
     }
@@ -365,7 +365,7 @@ final class DataBatchUpdateTests: XCTestCase {
             IndexPair(item: 0, section: 6): IndexPair(item: 0, section: 4),
         ]
         
-        for indexPair in dataSourceCounts.indexPairs(startIndex: 0, endIndex: dataSourceCounts.itemsCount) {
+        for indexPair in dataSourceCounts.indexPairs(for: 0..<dataSourceCounts.itemsCount) {
             XCTAssertEqual(changes.indexPairAfterUpdate(for: indexPair), results[indexPair])
         }
     }

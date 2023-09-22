@@ -63,7 +63,9 @@ public struct DataSourceCounts {
         self.sections = sections
     }
     
-    public func index(for indexPair: IndexPair) -> Int {
+    public func index(of indexPair: IndexPair) -> Int {
+        assert(indexPair.item < self.sections[indexPair.section].itemCount)
+        
         return self.sections[indexPair.section].firstItemIndex + indexPair.item
     }
     
@@ -82,6 +84,14 @@ public struct DataSourceCounts {
         return IndexPair(item: index - sections[section].firstItemIndex, section: section)
     }
     
+    public func indexPair(before indexPair: IndexPair) -> IndexPair? {
+        if indexPair.item == 0 {
+            return indexPair.section > 0 ? IndexPair(item: sections[indexPair.section - 1].itemCount - 1, section: indexPair.section - 1) : nil
+        } else {
+            return IndexPair(item: indexPair.item - 1, section: indexPair.section)
+        }
+    }
+    
     public func indexPair(after indexPair: IndexPair) -> IndexPair? {
         if indexPair.item == self.sections[indexPair.section].itemCount - 1 {
             return indexPair.section < self.numberOfSections - 1 ? IndexPair(item: 0, section: indexPair.section + 1) : nil
@@ -90,27 +100,47 @@ public struct DataSourceCounts {
         }
     }
     
-    public func indexPairs(startIndex: Int, endIndex: Int) -> [IndexPair] {
+    public func indexPairs(for range: ClosedRange<Int>) -> [IndexPair] {
         guard self.itemsCount > 0 else { return [] }
         
-        let startIndex = startIndex.clamp(min: 0, max: self.itemsCount-1)
-        let endIndex = endIndex.clamp(min: 0, max: self.itemsCount)
-        guard endIndex > startIndex else { return [] }
+        let startIndex = range.lowerBound.clamp(min: 0, max: self.itemsCount-1)
+        let endIndex = range.upperBound.clamp(min: 0, max: self.itemsCount-1)
+        guard endIndex >= startIndex else { return [] }
         
-        var result = [IndexPair]()
+        let firstIndexPair = self.indexPair(for: startIndex)
+        let lastIndexPair = self.indexPair(for: endIndex)
         
-        var indexPair = self.indexPair(for: startIndex)
-        
-        // TODO: This could be optimized a lot by reducing the numer of iterations
-        for _ in startIndex...endIndex {
-            result.append(indexPair)
-            guard let nextIndexPair = self.indexPair(after: indexPair) else {
-                break
+        let result = Array(unsafeUninitializedCapacity: endIndex - startIndex + 1) { buffer, initializedCount in
+            var index = 0
+            
+            for itemIndex in firstIndexPair.item...self.sections[firstIndexPair.section].itemCount-1 {
+                buffer[index] = IndexPair(item: itemIndex, section: firstIndexPair.section)
+                index += 1
             }
-            indexPair = nextIndexPair
+
+            if firstIndexPair.section < lastIndexPair.section {
+                for sectionIndex in firstIndexPair.section+1...lastIndexPair.section-1 {
+                    let sectionData = self.sections[sectionIndex]
+                    for itemIndex in 0...sectionData.itemCount-1 {
+                        buffer[index] = IndexPair(item: itemIndex, section: sectionIndex)
+                        index += 1
+                    }
+                }
+
+                for itemIndex in 0...lastIndexPair.item {
+                    buffer[index] = IndexPair(item: itemIndex, section: lastIndexPair.section)
+                    index += 1
+                }
+            }
+            
+            initializedCount = index
         }
-        
+
         return result
+    }
+    
+    public func indexPairs(for range: Range<Int>) -> [IndexPair] {
+        return indexPairs(for: range.lowerBound...range.upperBound-1)
     }
 }
 
@@ -125,6 +155,4 @@ extension DataSourceCounts: Equatable {
         
         return true
     }
-    
-    
 }
