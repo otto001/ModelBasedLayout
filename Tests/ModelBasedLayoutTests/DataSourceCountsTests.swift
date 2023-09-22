@@ -11,6 +11,7 @@ import UIKit
 
 
 final class DataSourceCountsTests: XCTestCase {
+    var rng = RandomNumberGeneratorWithSeed(seed: 666)
     
     override func setUpWithError() throws {
         // Put setup code here. This method is called before the invocation of each test method in the class.
@@ -79,6 +80,9 @@ final class DataSourceCountsTests: XCTestCase {
         XCTAssertEqual(test.index(of: IndexPair(item: 0, section: 3)), 175)
         XCTAssertEqual(test.index(of: IndexPair(item: 24, section: 3)), 199)
         
+        
+        XCTAssertEqual(test.indexPairs(for: 0..<3), [IndexPair(item: 0, section: 0), IndexPair(item: 1, section: 0), IndexPair(item: 2, section: 0)])
+        XCTAssertEqual(test.indexPairs(for: 98...101), [IndexPair(item: 98, section: 0), IndexPair(item: 99, section: 0), IndexPair(item: 0, section: 1), IndexPair(item: 1, section: 1)])
         
         var result = (0..<100).map { IndexPair(item: $0, section: 0)}
         result.append(contentsOf: (0..<50).map { IndexPair(item: $0, section: 1)})
@@ -159,12 +163,27 @@ final class DataSourceCountsTests: XCTestCase {
     }
     
     func testIndexPairRangePerformance() {
+        let sections: [Int] = (0..<1_000).map {_ in
+            return 1000
+        }
+        let test = DataSourceCounts(sections: sections)
+        
         self.measure {
-            let sections: [Int] = (0..<1_000).map {_ in
-                return 1000
-            }
-            let test = DataSourceCounts(sections: sections)
             _ = test.indexPairs(for: 0..<test.itemsCount)
+        }
+    }
+    
+    func testIndexPairForIndexPerformance() {
+        let sections: [Int] = (0..<1_000).map {_ in
+            return 1000
+        }
+        let test = DataSourceCounts(sections: sections)
+        
+        self.measure {
+            for _ in 0..<100_000 {
+                let index = Int.random(in: 0..<test.itemsCount, using: &rng)
+                _ = test.indexPair(for: index)
+            }
         }
     }
 }

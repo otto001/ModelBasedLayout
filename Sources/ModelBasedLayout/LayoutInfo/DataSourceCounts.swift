@@ -113,17 +113,24 @@ public struct DataSourceCounts {
         let result = Array(unsafeUninitializedCapacity: endIndex - startIndex + 1) { buffer, initializedCount in
             var index = 0
             
-            for itemIndex in firstIndexPair.item...self.sections[firstIndexPair.section].itemCount-1 {
-                buffer[index] = IndexPair(item: itemIndex, section: firstIndexPair.section)
-                index += 1
-            }
-
-            if firstIndexPair.section < lastIndexPair.section {
-                for sectionIndex in firstIndexPair.section+1...lastIndexPair.section-1 {
-                    let sectionData = self.sections[sectionIndex]
-                    for itemIndex in 0...sectionData.itemCount-1 {
-                        buffer[index] = IndexPair(item: itemIndex, section: sectionIndex)
-                        index += 1
+            if firstIndexPair.section == lastIndexPair.section {
+                for itemIndex in firstIndexPair.item...lastIndexPair.item {
+                    buffer[index] = IndexPair(item: itemIndex, section: firstIndexPair.section)
+                    index += 1
+                }
+            } else {
+                for itemIndex in firstIndexPair.item...self.sections[firstIndexPair.section].itemCount-1 {
+                    buffer[index] = IndexPair(item: itemIndex, section: firstIndexPair.section)
+                    index += 1
+                }
+                
+                if firstIndexPair.section+1 <= lastIndexPair.section-1 {
+                    for sectionIndex in firstIndexPair.section+1...lastIndexPair.section-1 {
+                        let sectionData = self.sections[sectionIndex]
+                        for itemIndex in 0...sectionData.itemCount-1 {
+                            buffer[index] = IndexPair(item: itemIndex, section: sectionIndex)
+                            index += 1
+                        }
                     }
                 }
 
