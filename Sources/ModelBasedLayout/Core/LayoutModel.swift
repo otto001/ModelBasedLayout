@@ -1,6 +1,6 @@
 //
 //  LayoutModel.swift
-//  ModelBasedCollectionView
+//  ModelBasedLayout
 //
 //  Created by Matteo Ludwig on 18.07.23.
 //

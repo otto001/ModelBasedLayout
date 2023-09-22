@@ -119,7 +119,6 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
         super.invalidateLayout()
     }
     
- 
     public override final func invalidateLayout(with context: UICollectionViewLayoutInvalidationContext) {
         super.invalidateLayout(with: context)
 
@@ -134,9 +133,7 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
         return context
     }
     
-
     public override final func shouldInvalidateLayout(forBoundsChange newBounds: CGRect) -> Bool {
-        //print("shouldInvalidateLayout", newBounds)
         return self.controller.shouldInvalidateLayout(forBoundsChange: newBounds) || super.shouldInvalidateLayout(forBoundsChange: newBounds)
     }
     
@@ -145,14 +142,11 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
     }
     
     // MARK: Attrs in Rect
-    
     public override final func layoutAttributesForElements(in rect: CGRect) -> [UICollectionViewLayoutAttributes]? {
-        // TODO: Optimize!
         self.controller.layoutAttributesForElements(in: rect)?.map {$0.forLayout()}
     }
     
     // MARK: Items
-
     public override final func initialLayoutAttributesForAppearingItem(at indexPath: IndexPath) -> UICollectionViewLayoutAttributes? {
         guard indexPath.count == 2 else { return nil }
         return  self.controller.layoutAttributes(forAppearingItemAt: .init(indexPath))?.forLayout()
@@ -167,8 +161,6 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
         guard indexPath.count == 2 else { return nil }
         return self.controller.layoutAttributes(forDisappearingItemAt: .init(indexPath))?.forLayout()
     }
-    
-    
     
     // MARK: Supplementary Views
     public override final func initialLayoutAttributesForAppearingSupplementaryElement(ofKind elementKind: String, at indexPath: IndexPath) -> UICollectionViewLayoutAttributes? {
