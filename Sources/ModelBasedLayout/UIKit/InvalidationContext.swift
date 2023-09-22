@@ -9,5 +9,6 @@ import UIKit
 
 
 public class InvalidationContext: UICollectionViewLayoutInvalidationContext {
+    public var invalidateViewSize: Bool = false
     public var invalidateModel: Bool = false
 }

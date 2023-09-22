@@ -97,21 +97,21 @@ class LayoutController<ModelType: LayoutModel> {
         guard contentSizeBefore > .zero && contentSizeAfter > .zero  else { return .zero }
         
         let currentContentOffset = contentOffset.cgSize
-
-
+        
+        
         let halfBoundsSizeBefore = (geometryBefore.viewSize/2)
         let halfBoundsSizeAfter = (geometryAfter.viewSize/2)
-
+        
         let insetBefore = CGSize(width: geometryBefore.adjustedContentInset.left, height: geometryBefore.adjustedContentInset.top)
         let insetAfter = CGSize(width: geometryAfter.adjustedContentInset.left, height: geometryAfter.adjustedContentInset.top)
         let insetDiff = insetBefore - insetAfter
-
+        
         let scrollRatio = (currentContentOffset + halfBoundsSizeBefore - insetDiff) / contentSizeBefore
-
+        
         return (scrollRatio * contentSizeAfter - halfBoundsSizeAfter) - currentContentOffset
     }
     
-
+    
     private func contentOffsetAnchor(for container: LayoutContainer<ModelType>) -> IndexPair? {
         let bounds = container.boundsController.bounds
         let model = container.model
@@ -137,7 +137,7 @@ class LayoutController<ModelType: LayoutModel> {
         guard let oldAnchorPosition = originContainer.model.layoutAttributes(for: .cell(anchorIndexPairBeforeUpdate))?.center,
               let newAnchorPosition = targetContainer.model.layoutAttributes(for: .cell(anchorIndexPairAfterUpdate))?.center
         else { return nil }
-
+        
         
         let contentSize = targetContainer.model.contentSize
         
@@ -152,7 +152,7 @@ class LayoutController<ModelType: LayoutModel> {
                                        y: contentSize.height + targetInsets.bottom - newBounds.height)
         
         let result = CGPoint(x: max(minContentOffset.x, min(maxContentOffset.x, newContentOffset.x)),
-                       y: max(minContentOffset.y, min(maxContentOffset.y, newContentOffset.y)))
+                             y: max(minContentOffset.y, min(maxContentOffset.y, newContentOffset.y)))
         
         return result
     }
@@ -205,7 +205,7 @@ class LayoutController<ModelType: LayoutModel> {
             // viewSize change
             
             
-            context.invalidateModel = true
+            context.invalidateViewSize = true
             
             let newLayout = self.stateController.makeNewLayout(forNewBounds: newBounds)
             context.contentSizeAdjustment = newLayout.model.contentSize - currentModel.contentSize
@@ -229,7 +229,7 @@ class LayoutController<ModelType: LayoutModel> {
     }
     
     func invalidateLayout(with context: InvalidationContext) {
-        if context.invalidateDataSourceCounts || context.invalidateEverything || context.invalidateModel  {
+        if context.invalidateDataSourceCounts || context.invalidateEverything || context.invalidateModel || context.invalidateViewSize  {
             self.stateController.pushNewLayout()
             self.boundsController(.beforeUpdate)?.freeze()
             self.stickyController(.beforeUpdate)?.willBeReplaced()
