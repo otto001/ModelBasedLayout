@@ -293,8 +293,8 @@ class LayoutController<ModelType: LayoutModel> {
             }
         }
         
-        let attrs = self.layoutModel(.beforeUpdate)?.layoutAttributes(for: .cell(indexPair))
-        return attrs
+        guard self.dataSourceCounts(.beforeUpdate)?.contains(indexPair: indexPair) == true else { return nil }
+        return self.layoutModel(.beforeUpdate)?.layoutAttributes(for: .cell(indexPair))
     }
     
     func layoutAttributes(forCellAt indexPair: IndexPair) -> LayoutAttributes? {
@@ -361,6 +361,7 @@ class LayoutController<ModelType: LayoutModel> {
             }
         }
         
+        guard self.dataSourceCounts(.beforeUpdate)?.contains(indexPair: element.indexPair) == true else { return nil }
         return self.stickyController(.beforeUpdate)?.layoutAttributes(for: element)
     }
     
