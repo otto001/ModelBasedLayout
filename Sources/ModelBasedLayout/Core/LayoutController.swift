@@ -119,11 +119,12 @@ class LayoutController<ModelType: LayoutModel> {
         
         guard oldBounds.size > .zero && newBounds.size > .zero else { return nil }
         
-        guard let anchorIndexPairBeforeUpdate = originContainer.model.contentOffsetAnchor(in: oldBounds) else { return nil }
-        let anchorIndexPairAfterUpdate = self.dataChange?.indexPairAfterUpdate(for: anchorIndexPairBeforeUpdate) ?? anchorIndexPairBeforeUpdate
+        guard let anchorBeforeUpdate = originContainer.model.contentOffsetAnchor(in: oldBounds) else { return nil }
+        let anchorIndexPairAfterUpdate = self.dataChange?.indexPairAfterUpdate(for: anchorBeforeUpdate.indexPair) ?? anchorBeforeUpdate.indexPair
+        let anchorAfterUpdate = Element(indexPair: anchorIndexPairAfterUpdate, elementKind: anchorBeforeUpdate.elementKind)
         
-        guard let oldAnchorPosition = originContainer.model.layoutAttributes(for: .cell(anchorIndexPairBeforeUpdate))?.frame.center,
-              let newAnchorPosition = targetContainer.model.layoutAttributes(for: .cell(anchorIndexPairAfterUpdate))?.frame.center
+        guard let oldAnchorPosition = originContainer.model.layoutAttributes(for: anchorBeforeUpdate)?.frame.center,
+              let newAnchorPosition = targetContainer.model.layoutAttributes(for: anchorAfterUpdate)?.frame.center
         else { return nil }
         
         
