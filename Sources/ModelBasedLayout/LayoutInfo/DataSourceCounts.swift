@@ -14,17 +14,19 @@ public struct DataSourceCounts {
     
     
     public struct SectionData {
-        let section: Int
-        let itemCount: Int
-        let firstItemIndex: Int
+        public let section: Int
+        public let itemCount: Int
+        public let firstItemIndex: Int
         
-        var lastItemIndex: Int {
+        public var lastItemIndex: Int {
             firstItemIndex + itemCount - 1
         }
-        var firstItemIndexPair: IndexPair {
+        
+        public var firstItemIndexPair: IndexPair {
             return IndexPair(item: 0, section: section)
         }
-        var lastItemIndexPair: IndexPair {
+        
+        public var lastItemIndexPair: IndexPair {
             return IndexPair(item: itemCount - 1, section: section)
         }
     }

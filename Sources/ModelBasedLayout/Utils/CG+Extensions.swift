@@ -116,3 +116,10 @@ extension CGSize {
         return lhs.width <= rhs.width && lhs.height <= rhs.height
     }
 }
+
+
+extension CGRect {
+    var center: CGPoint {
+        CGPoint(x: midX, y: midY)
+    }
+}

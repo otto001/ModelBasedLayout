@@ -134,8 +134,8 @@ class LayoutController<ModelType: LayoutModel> {
         guard let anchorIndexPairBeforeUpdate = self.contentOffsetAnchor(for: originContainer) else { return nil }
         let anchorIndexPairAfterUpdate = self.dataChange?.indexPairAfterUpdate(for: anchorIndexPairBeforeUpdate) ?? anchorIndexPairBeforeUpdate
         
-        guard let oldAnchorPosition = originContainer.model.layoutAttributes(for: .cell(anchorIndexPairBeforeUpdate))?.center,
-              let newAnchorPosition = targetContainer.model.layoutAttributes(for: .cell(anchorIndexPairAfterUpdate))?.center
+        guard let oldAnchorPosition = originContainer.model.layoutAttributes(for: .cell(anchorIndexPairBeforeUpdate))?.frame.center,
+              let newAnchorPosition = targetContainer.model.layoutAttributes(for: .cell(anchorIndexPairAfterUpdate))?.frame.center
         else { return nil }
         
         

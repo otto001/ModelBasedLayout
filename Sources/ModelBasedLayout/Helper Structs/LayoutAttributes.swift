@@ -7,26 +7,44 @@
 
 import UIKit
 
-public extension CATransform3D {
-    static var identity: CATransform3D = .init(m11: 1, m12: 0, m13: 0, m14: 0, m21: 0, m22: 1, m23: 0, m24: 0, m31: 0, m32: 0, m33: 1, m34: 0, m41: 0, m42: 0, m43: 0, m44: 1)
-}
-
-
 
 public struct LayoutAttributes {
+    // MARK: Element
     public private(set) var element: Element
     var indexPair: IndexPair { element.indexPair }
     var elementKind: ElementKind { element.elementKind }
-   
-    public var frame: CGRect
-    public var zIndex: Int
     
+    
+    // MARK: Geometry
+    private var _frame: CGRect
+    public var transform: CGAffineTransform
+    
+    public var frame: CGRect {
+        get {
+            return _frame.applying(transform)
+        }
+        set {
+            _frame = newValue
+        }
+    }
+    
+    public var bounds: CGRect {
+        get {
+            CGRect(origin: .zero, size: _frame.size)
+        }
+        set {
+            assert(newValue.origin == .zero, "LayoutAttribute bounds must have their origin equal (0, 0).")
+            _frame.size = newValue.size
+        }
+    }
+    
+    // MARK: Visuals
+    public var zIndex: Int
     public var alpha: CGFloat
     public var isHidden: Bool
     
-    public var transform: CGAffineTransform
     
-    // Sticky
+    // MARK: StickyAttributes
     public var stickyAttributes: StickyAttributes?
     internal var extendedStickyBounds: CGRect? {
         if let stickyAttributes = stickyAttributes {
@@ -40,55 +58,40 @@ public struct LayoutAttributes {
         }
         return nil
     }
+    
     public var isSticky: Bool {
         (stickyAttributes?.stickyBounds ?? .none) != .none
     }
     
-    public var center: CGPoint {
-        get {
-            CGPoint(x: frame.midX, y: frame.midY)
-        }
-        set {
-            frame.origin =  CGPoint(x: newValue.x - size.width/2,
-                                    y: newValue.y - size.height/2)
-        }
-    }
-    
-    public var size: CGSize {
-        get {
-            frame.size
-        }
-        set {
-            frame.size = newValue
-        }
-    }
-    
+    // MARK: Init
     public init(element: Element,
-         frame: CGRect = .zero, zIndex: Int = 0,
-         alpha: CGFloat = 1, isHidden: Bool = false,
-         transform: CGAffineTransform = .identity) {
+                frame: CGRect = .zero, zIndex: Int = 0,
+                alpha: CGFloat = 1, isHidden: Bool = false,
+                transform: CGAffineTransform = .identity) {
         self.element = element
-        self.frame = frame
+        self._frame = frame
         self.zIndex = zIndex
         self.alpha = alpha
         self.isHidden = isHidden
         self.transform = transform
     }
     
+    // MARK: from UIKit
     public init(_ collectionViewLayoutAttributes: UICollectionViewLayoutAttributes) {
         self.element = .init(indexPair: .init(collectionViewLayoutAttributes.indexPath), elementKind: .init(from: collectionViewLayoutAttributes))
- 
-
-        self.frame = collectionViewLayoutAttributes.frame
+        
+        
+        self._frame = collectionViewLayoutAttributes.frame
         self.zIndex = collectionViewLayoutAttributes.zIndex
-
+        
         self.alpha = collectionViewLayoutAttributes.alpha
         self.isHidden = collectionViewLayoutAttributes.isHidden
-
+        
         self.transform = collectionViewLayoutAttributes.transform
         //self.transform3D = collectionViewLayoutAttributes.transform3D
     }
     
+    // MARK: to UIKit
     public func forLayout() -> UICollectionViewLayoutAttributes {
         let collectionViewLayoutAttributes: UICollectionViewLayoutAttributes
         
@@ -106,18 +109,20 @@ public struct LayoutAttributes {
             collectionViewLayoutAttributes = UICollectionViewLayoutAttributes(forDecorationViewOfKind: elementKind, with: element.indexPair.indexPath)
         }
         
-        collectionViewLayoutAttributes.frame = self.frame
-        collectionViewLayoutAttributes.zIndex = self.zIndex
+        collectionViewLayoutAttributes.frame = self._frame
+        collectionViewLayoutAttributes.transform = self.transform
+        
         
         collectionViewLayoutAttributes.alpha = self.alpha
         collectionViewLayoutAttributes.isHidden = self.isHidden
+        collectionViewLayoutAttributes.zIndex = self.zIndex
         
-        collectionViewLayoutAttributes.transform = self.transform
         //collectionViewLayoutAttributes.transform3D = self.transform3D
         
         return collectionViewLayoutAttributes
     }
     
+    // MARK: Helpers
     internal func withIndexPair(_ indexPair: IndexPair) -> Self {
         var copy = self
         copy.element.indexPair = indexPair
