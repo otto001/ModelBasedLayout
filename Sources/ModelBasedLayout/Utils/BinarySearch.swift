@@ -41,14 +41,14 @@ extension RandomAccessCollection where Element: Comparable & Equatable, Index: B
 }
 
 enum BinarySearchComparisonResult {
-    /// The searched element is before the current one.
-    case before
+    /// The current element is before the searched one.
+    case beforeSearched
     
-    /// The element is equal to the searched for element. Terminates the binary search.
-    case equal
+    /// The current element is equal to the searched element. Terminates the binary search.
+    case equalToSearched
     
-    /// The searched element is after the current one.
-    case after
+    /// The current element is after the searched one.
+    case afterSearched
 }
 
 extension RandomAccessCollection where Index: BinaryInteger {
@@ -68,11 +68,11 @@ extension RandomAccessCollection where Index: BinaryInteger {
             let center = (first + last)/2
             
             switch comparision(self[center]) {
-            case .equal:
+            case .equalToSearched:
                 return center
-            case .after:
+            case .afterSearched:
                 last = center - 1
-            case .before:
+            case .beforeSearched:
                 first = center + 1
             }
         }
@@ -92,14 +92,14 @@ extension RandomAccessCollection where Index: BinaryInteger {
                 let center = (first + last)/2
                 
                 switch comparision(self[center]) {
-                case .equal, .after:
+                case .equalToSearched, .afterSearched:
                     last = center
-                case .before:
+                case .beforeSearched:
                     first = center + 1
                 }
             }
             
-            if comparision(self[first]) == .equal {
+            if comparision(self[first]) == .equalToSearched {
                 return first
             }
             
@@ -114,14 +114,14 @@ extension RandomAccessCollection where Index: BinaryInteger {
                 let center = (first + last +  1)/2
                 
                 switch comparision(self[center]) {
-                case .equal, .before:
+                case .equalToSearched, .beforeSearched:
                     first = center
-                case .after:
+                case .afterSearched:
                     last = center - 1
                 }
             }
             
-            if comparision(self[last]) == .equal {
+            if comparision(self[last]) == .equalToSearched {
                 return last
             }
             

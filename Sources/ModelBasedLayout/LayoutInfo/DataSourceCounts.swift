@@ -76,11 +76,11 @@ public struct DataSourceCounts {
         
         let section = self.sections.binarySearch { section in
             if section.firstItemIndex > index {
-                return .after
+                return .afterSearched
             } else if section.lastItemIndex < index {
-                return .before
+                return .beforeSearched
             }
-            return .equal
+            return .equalToSearched
         } ?? sections.endIndex - 1
 
         return IndexPair(item: index - sections[section].firstItemIndex, section: section)
