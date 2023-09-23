@@ -49,7 +49,7 @@ public struct LayoutAttributes {
     internal var extendedStickyBounds: CGRect? {
         if let stickyAttributes = stickyAttributes {
             switch stickyAttributes.boundingBehaviour {
-            case .push:
+            case .push, .disappear:
                 return stickyAttributes.stickyBounds
             case .fade:
                 return stickyAttributes.stickyBounds.insetBy(dx: -frame.width, dy: -frame.height)

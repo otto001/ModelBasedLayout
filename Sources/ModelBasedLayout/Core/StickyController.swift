@@ -93,6 +93,8 @@ class StickyController {
                 newAttrs.alpha *= (intersection.width * intersection.height)/(newAttrs.frame.width * newAttrs.frame.height)
             }
             newAttrs.frame.ensureWithin(newAttrs.extendedStickyBounds!, edges: .all)
+        case .disappear:
+            newAttrs.isHidden = !newAttrs.frame.isWithin(stickyAttrs.stickyBounds, edges: .all)
         }
         
     

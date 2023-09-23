@@ -10,7 +10,7 @@ import UIKit
 
 public struct StickyAttributes {
     public enum BoundingBehaviour {
-        case push, fade
+        case push, fade, disappear
     }
     
     public var stickyEdges: Edges

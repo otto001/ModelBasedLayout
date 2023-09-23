@@ -22,6 +22,7 @@ public protocol LayoutModel {
     func contentOffsetAnchor(in rect: CGRect) -> Element?
     
     func adjustForSelfSizing(element: Element, preferredSize: CGSize)
+    
 }
 
 public extension LayoutModel {
@@ -43,11 +44,12 @@ public extension LayoutModel {
             .map {
                 ($0.element, ($0.frame.center - center).length)
             }
-            .min{
+            .min {
                 $0.1 < $1.1
             }?.0
     }
     
     func adjustForSelfSizing(element: Element, preferredSize: CGSize) {
     }
+    
 }

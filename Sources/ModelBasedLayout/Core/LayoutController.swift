@@ -50,6 +50,7 @@ class LayoutController<ModelType: LayoutModel> {
         self.stateController.layout(state)?.boundsController
     }
     
+    // MARK: Content Size
     var collectionViewContentSize: CGSize {
         if let model = self.layoutModel(.afterUpdate) {
             return model.contentSize
