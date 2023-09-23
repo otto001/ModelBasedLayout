@@ -29,6 +29,7 @@ class LayoutController<ModelType: LayoutModel> {
         self.boundsProvider = boundsProvider
     }
     
+    // MARK: Accessors
     internal func layoutModel(_ state: LayoutState) -> ModelType? {
         self.stateController.layout(state)?.model
     }
@@ -56,13 +57,12 @@ class LayoutController<ModelType: LayoutModel> {
         return .zero
     }
     
-    // MARK: Prepare
+    // MARK: Prepare & Finalize
     func prepare() {
         if self.layoutModel(.afterUpdate) == nil {
             self.stateController.pushNewLayout()
         }
         self.boundsController(.afterUpdate)?.updateBoundsIfNeeded()
-        //self.replaceModelOnPrepare = false
         
         self.targetContentOffsetAdjustment = .zero
     }
@@ -178,7 +178,7 @@ class LayoutController<ModelType: LayoutModel> {
         return false
     }
     
-    func configureInvalidationContext(forBoundsChange newBounds: CGRect, with context: InvalidationContext) {
+    func configureInvalidationContext(context: InvalidationContext, forBoundsChange newBounds: CGRect) {
         let boundsController = self.boundsController(.afterUpdate)
         assert(boundsController?.frozen != true)
         boundsController?.freeze()
@@ -214,6 +214,10 @@ class LayoutController<ModelType: LayoutModel> {
     }
     
     func invalidateLayout(with context: InvalidationContext) {
+        if context.invalidateStickyCache {
+            self.stickyController(.afterUpdate)?.resetCache()
+        }
+        
         if context.invalidateDataSourceCounts || context.invalidateEverything || context.invalidateModel || context.invalidateViewSize  {
             self.stateController.pushNewLayout()
             self.boundsController(.beforeUpdate)?.freeze()
@@ -221,6 +225,20 @@ class LayoutController<ModelType: LayoutModel> {
         }
         
         self.boundsController(.afterUpdate)?.invalidate()
+    }
+    
+    // MARK: Self Sizing
+    func shouldInvalidateLayout(forSelfSizingElement element: Element, preferredSize: CGSize) -> Bool {
+        guard let attrsBefore = self.layoutAttributes(for: element) else { return false }
+        self.layoutModel(.afterUpdate)?.adjustForSelfSizing(element: element, preferredSize: preferredSize)
+        let attrsAfter = self.layoutAttributes(for: element)
+        
+        return attrsBefore.frame.size != attrsAfter?.frame.size
+    }
+    
+    func configureInvalidationContext(context: InvalidationContext, forSelfSizingElement element: Element, preferredSize: CGSize) {
+        context.invalidateElement(element)
+        context.invalidateStickyCache = true
     }
     
     // MARK: Animations

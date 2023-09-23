@@ -81,4 +81,9 @@ class ChunkedRectMap<Value> {
         
         return results
     }
+    
+    func removeAll(keepingCapacity: Bool = false) {
+        self.data.removeAll(keepingCapacity: keepingCapacity)
+        self.count = 0
+    }
 }

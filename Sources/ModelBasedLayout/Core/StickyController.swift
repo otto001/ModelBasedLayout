@@ -43,6 +43,11 @@ class StickyController {
         return false
     }
     
+    func resetCache() {
+        self.cachedAttributes.removeAll(keepingCapacity: true)
+        self.invalidationMap.removeAll(keepingCapacity: true)
+    }
+    
     private func bounds(for stickyAttributes: StickyAttributes) -> CGRect {
         (stickyAttributes.useSafeAreaInsets ? self.boundsController.visibleBounds : self.boundsController.bounds).inset(by: stickyAttributes.additionalInsets)
     }
@@ -99,7 +104,7 @@ class StickyController {
         return self.baseLayoutAttributes(for: element).map {self.stickify($0)}
     }
 
-    func configureInvalidationContext(forBoundsChange newBounds: CGRect, with context: UICollectionViewLayoutInvalidationContext) {
+    func configureInvalidationContext(forBoundsChange newBounds: CGRect, with context: InvalidationContext) {
         let rect = self.boundsController.bounds.union(newBounds)
         
         let result = self.invalidationMap.query(rect).map {
@@ -109,17 +114,7 @@ class StickyController {
         }
         
         for attrs in result {
-            switch attrs.elementKind {
-            case .header:
-                context.invalidateSupplementaryElements(ofKind: UICollectionView.elementKindSectionHeader, at: [attrs.indexPair.indexPath])
-            case .footer:
-                context.invalidateSupplementaryElements(ofKind: UICollectionView.elementKindSectionFooter, at: [attrs.indexPair.indexPath])
-            case .additionalSupplementaryView(let elementKind):
-                context.invalidateSupplementaryElements(ofKind: elementKind, at: [attrs.indexPair.indexPath])
-            default:
-                break
-            }
-            
+            context.invalidateElement(attrs.element)
         }
     }
 }

@@ -20,6 +20,8 @@ public protocol LayoutModel {
     func layoutAttributes(for element: Element, frame: AnimationFrame) -> LayoutAttributes?
     
     func contentOffsetAnchor(in rect: CGRect) -> IndexPair?
+    
+    func adjustForSelfSizing(element: Element, preferredSize: CGSize)
 }
 
 public extension LayoutModel {
@@ -44,5 +46,8 @@ public extension LayoutModel {
             .min{ (a, b) in
                 a.1 < b.1
             }?.0
+    }
+    
+    func adjustForSelfSizing(element: Element, preferredSize: CGSize) {
     }
 }

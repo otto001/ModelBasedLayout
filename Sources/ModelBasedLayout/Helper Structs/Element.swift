@@ -11,12 +11,16 @@ import UIKit
 public struct Element: Hashable, Equatable {
     public var indexPair: IndexPair
     public var elementKind: ElementKind
-//    
-//    
-//    init(supplementaryOfKind elementKind: String, indexPair: IndexPair) {
-//        self.indexPair = indexPair
-//        
-//    }
+    
+    init(indexPair: IndexPair, elementKind: ElementKind) {
+        self.indexPair = indexPair
+        self.elementKind = elementKind
+    }
+    
+    init(_ collectionViewLayoutAttributes: UICollectionViewLayoutAttributes) {
+        self.elementKind = ElementKind(from: collectionViewLayoutAttributes)
+        self.indexPair = IndexPair(collectionViewLayoutAttributes.indexPath)
+    }
     
     public static func cell(_ indexPair: IndexPair) -> Self {
         return Element(indexPair: indexPair, elementKind: .cell)

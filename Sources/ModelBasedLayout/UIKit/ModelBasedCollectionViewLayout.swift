@@ -128,7 +128,7 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
     public override final func invalidationContext(forBoundsChange newBounds: CGRect) -> UICollectionViewLayoutInvalidationContext {
         let context = super.invalidationContext(forBoundsChange: newBounds)
         
-        self.controller.configureInvalidationContext(forBoundsChange: newBounds, with: context as! InvalidationContext)
+        self.controller.configureInvalidationContext(context: context as! InvalidationContext, forBoundsChange: newBounds)
         
         return context
     }
@@ -137,6 +137,22 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
         return self.controller.shouldInvalidateLayout(forBoundsChange: newBounds) || super.shouldInvalidateLayout(forBoundsChange: newBounds)
     }
     
+    // MARK: Self Sizing Cells
+    
+    public override final func shouldInvalidateLayout(forPreferredLayoutAttributes preferredAttributes: UICollectionViewLayoutAttributes, withOriginalAttributes originalAttributes: UICollectionViewLayoutAttributes) -> Bool {
+        return self.controller.shouldInvalidateLayout(forSelfSizingElement: .init(preferredAttributes),
+                                                      preferredSize: preferredAttributes.size)
+    }
+    
+    public override final func invalidationContext(forPreferredLayoutAttributes preferredAttributes: UICollectionViewLayoutAttributes, withOriginalAttributes originalAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutInvalidationContext {
+        let context = super.invalidationContext(forPreferredLayoutAttributes: preferredAttributes, withOriginalAttributes: originalAttributes)
+        self.controller.configureInvalidationContext(context: context as! InvalidationContext,
+                                                     forSelfSizingElement: Element(preferredAttributes),
+                                                     preferredSize: preferredAttributes.size)
+        return context
+    }
+    
+    // MARK: Target Content Offset
     public override final func targetContentOffset(forProposedContentOffset proposedContentOffset: CGPoint) -> CGPoint {
         return self.controller.targetContentOffset(forProposedContentOffset: proposedContentOffset)
     }
