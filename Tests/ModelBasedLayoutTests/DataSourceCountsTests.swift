@@ -25,7 +25,7 @@ final class DataSourceCountsTests: XCTestCase {
         
         let test = DataSourceCounts(sections: [100, 50, 25, 25])
         
-        XCTAssertEqual(test.itemsCount, 200)
+        XCTAssertEqual(test.itemCount, 200)
         XCTAssertEqual(test.numberOfSections, 4)
         
         XCTAssertEqual(test.sections[0].section, 0)
@@ -96,7 +96,7 @@ final class DataSourceCountsTests: XCTestCase {
         allIndexPairs.append(contentsOf: (0..<25).map { IndexPair(item: $0, section: 2)})
         allIndexPairs.append(contentsOf: (0..<25).map { IndexPair(item: $0, section: 3)})
         
-        XCTAssertEqual(test.indexPairs(for: 0..<test.itemsCount), allIndexPairs)
+        XCTAssertEqual(test.indexPairs(for: 0..<test.itemCount), allIndexPairs)
         
         for i in 0..<allIndexPairs.count-1 {
             XCTAssertEqual(test.indexPair(after: allIndexPairs[i]), allIndexPairs[i + 1])
@@ -130,7 +130,7 @@ final class DataSourceCountsTests: XCTestCase {
         
         let test = DataSourceCounts(collectionView: collectionView)
         
-        XCTAssertEqual(test.itemsCount, 200)
+        XCTAssertEqual(test.itemCount, 200)
         XCTAssertEqual(test.numberOfSections, 4)
         
         XCTAssertEqual(test.sections[0].section, 0)
@@ -169,7 +169,7 @@ final class DataSourceCountsTests: XCTestCase {
         let test = DataSourceCounts(sections: sections)
         
         self.measure {
-            _ = test.indexPairs(for: 0..<test.itemsCount)
+            _ = test.indexPairs(for: 0..<test.itemCount)
         }
     }
     
@@ -181,7 +181,7 @@ final class DataSourceCountsTests: XCTestCase {
         
         self.measure {
             for _ in 0..<100_000 {
-                let index = Int.random(in: 0..<test.itemsCount, using: &rng)
+                let index = Int.random(in: 0..<test.itemCount, using: &rng)
                 _ = test.indexPair(for: index)
             }
         }

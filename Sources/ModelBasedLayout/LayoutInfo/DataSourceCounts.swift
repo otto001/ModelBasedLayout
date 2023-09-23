@@ -9,7 +9,7 @@ import UIKit
 
 
 public struct DataSourceCounts {
-    public let itemsCount: Int
+    public let itemCount: Int
     public let sections: [SectionData]
     
     
@@ -39,29 +39,29 @@ public struct DataSourceCounts {
         
         let sectionCount = collectionView.numberOfSections
         
-        var itemsCount = 0
+        var itemCount = 0
         var sections = [SectionData]()
         
         for section in 0..<sectionCount {
             let sectionItemsCount = collectionView.numberOfItems(inSection: section)
-            sections.append(SectionData(section: section, itemCount: sectionItemsCount, firstItemIndex: itemsCount))
-            itemsCount += sectionItemsCount
+            sections.append(SectionData(section: section, itemCount: sectionItemsCount, firstItemIndex: itemCount))
+            itemCount += sectionItemsCount
         }
 
-        self.itemsCount = itemsCount
+        self.itemCount = itemCount
         self.sections = sections
     }
     
     init(sections sectionCounts: [Int]) {
-        var itemsCount = 0
+        var itemCount = 0
         var sections = [SectionData]()
         
         for (section, sectionItemsCount) in sectionCounts.enumerated() {
-            sections.append(SectionData(section: section, itemCount: sectionItemsCount, firstItemIndex: itemsCount))
-            itemsCount += sectionItemsCount
+            sections.append(SectionData(section: section, itemCount: sectionItemsCount, firstItemIndex: itemCount))
+            itemCount += sectionItemsCount
         }
         
-        self.itemsCount = itemsCount
+        self.itemCount = itemCount
         self.sections = sections
     }
     
@@ -72,7 +72,7 @@ public struct DataSourceCounts {
     }
     
     public func indexPair(for index: Int) -> IndexPair {
-        assert(index < self.itemsCount)
+        assert(index < self.itemCount)
         
         let section = self.sections.binarySearch { section in
             if section.firstItemIndex > index {
@@ -84,6 +84,14 @@ public struct DataSourceCounts {
         } ?? sections.endIndex - 1
 
         return IndexPair(item: index - sections[section].firstItemIndex, section: section)
+    }
+    
+    public func contains(indexPair: IndexPair) -> Bool {
+        return sections.indices.contains(indexPair.section) && indexPair.item > 0 && indexPair.item < sections[indexPair.section].itemCount
+    }
+    
+    public func contains(index: Int) -> Bool {
+        return index > 0 && index < itemCount
     }
     
     public func indexPair(before indexPair: IndexPair) -> IndexPair? {
@@ -103,10 +111,10 @@ public struct DataSourceCounts {
     }
     
     public func indexPairs(for range: ClosedRange<Int>) -> [IndexPair] {
-        guard self.itemsCount > 0 else { return [] }
+        guard self.itemCount > 0 else { return [] }
         
-        let startIndex = range.lowerBound.clamp(min: 0, max: self.itemsCount-1)
-        let endIndex = range.upperBound.clamp(min: 0, max: self.itemsCount-1)
+        let startIndex = range.lowerBound.clamp(min: 0, max: self.itemCount-1)
+        let endIndex = range.upperBound.clamp(min: 0, max: self.itemCount-1)
         guard endIndex >= startIndex else { return [] }
         
         let firstIndexPair = self.indexPair(for: startIndex)
@@ -156,7 +164,7 @@ public struct DataSourceCounts {
 
 extension DataSourceCounts: Equatable {
     public static func == (lhs: DataSourceCounts, rhs: DataSourceCounts) -> Bool {
-        guard lhs.itemsCount == rhs.itemsCount && lhs.sections.count == rhs.sections.count else { return false }
+        guard lhs.itemCount == rhs.itemCount && lhs.sections.count == rhs.sections.count else { return false }
         
         for i in 0..<lhs.sections.count {
             guard lhs.sections[i].itemCount == rhs.sections[i].itemCount else { return false }

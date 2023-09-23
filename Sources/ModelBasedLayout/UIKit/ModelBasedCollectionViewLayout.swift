@@ -154,7 +154,7 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
     
     // MARK: Target Content Offset
     public override final func targetContentOffset(forProposedContentOffset proposedContentOffset: CGPoint) -> CGPoint {
-        return self.controller.targetContentOffset(forProposedContentOffset: proposedContentOffset)
+        self.controller.targetContentOffset(forProposedContentOffset: proposedContentOffset)
     }
     
     // MARK: Attrs in Rect
@@ -165,7 +165,7 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
     // MARK: Items
     public override final func initialLayoutAttributesForAppearingItem(at indexPath: IndexPath) -> UICollectionViewLayoutAttributes? {
         guard indexPath.count == 2 else { return nil }
-        return  self.controller.layoutAttributes(forAppearingItemAt: .init(indexPath))?.forLayout()
+        return self.controller.layoutAttributes(forAppearingItemAt: .init(indexPath))?.forLayout()
     }
 
     public override final func layoutAttributesForItem(at indexPath: IndexPath) -> UICollectionViewLayoutAttributes? {

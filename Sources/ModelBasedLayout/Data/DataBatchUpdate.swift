@@ -86,7 +86,7 @@ struct DataBatchUpdate {
         }
         
         sectionIndiciesAfterUpdate = calculateIndexShifts(summary: sectionSummary)
-        let moves = calculateIndexShifts(summary: IndexBasedSummary(initialItemCount: dataSourceCounts.itemsCount + sectionSummary.insertions.count,
+        let moves = calculateIndexShifts(summary: IndexBasedSummary(initialItemCount: dataSourceCounts.itemCount + sectionSummary.insertions.count,
                                                                     moves: sectionSummary.moves))
         
         var perSectionSummaries: [IndexBasedSummary] = Array(repeating: .init(), count: dataSourceCounts.numberOfSections + sectionSummary.insertions.count)
