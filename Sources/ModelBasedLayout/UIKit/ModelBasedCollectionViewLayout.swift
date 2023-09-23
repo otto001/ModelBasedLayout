@@ -121,14 +121,18 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
     
     public override final func invalidateLayout(with context: UICollectionViewLayoutInvalidationContext) {
         super.invalidateLayout(with: context)
-
-        self.controller.invalidateLayout(with: context as! InvalidationContext)
+        
+        if self.collectionView != nil {
+            self.controller.invalidateLayout(with: context as! InvalidationContext)
+        }
     }
     
     public override final func invalidationContext(forBoundsChange newBounds: CGRect) -> UICollectionViewLayoutInvalidationContext {
         let context = super.invalidationContext(forBoundsChange: newBounds)
         
-        self.controller.configureInvalidationContext(context: context as! InvalidationContext, forBoundsChange: newBounds)
+        if self.collectionView != nil {
+            self.controller.configureInvalidationContext(context: context as! InvalidationContext, forBoundsChange: newBounds)
+        }
         
         return context
     }
