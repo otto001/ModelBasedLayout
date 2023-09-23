@@ -62,6 +62,9 @@ extension CGPoint {
         return lhs.x <= rhs.x && lhs.y <= rhs.y
     }
 
+    var length: CGFloat {
+        return sqrt(x*x+y*y)
+    }
 }
 
 extension CGSize {
@@ -114,6 +117,10 @@ extension CGSize {
     
     static func <=(lhs: CGSize, rhs: CGSize) -> Bool {
         return lhs.width <= rhs.width && lhs.height <= rhs.height
+    }
+    
+    var length: CGFloat {
+        return sqrt(width*width+height*height)
     }
 }
 
