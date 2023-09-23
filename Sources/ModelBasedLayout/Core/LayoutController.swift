@@ -17,16 +17,16 @@ class LayoutController<ModelType: LayoutModel> {
     private var targetContentOffset: CGPoint? = nil
     private var targetContentOffsetAdjustment: CGPoint = .zero
     
-    private(set) var boundsProvider: () -> CGRect
+    private(set) var boundsInfoProvider: () -> BoundsInfo
     
     init(_ model: @escaping (_ dataSourceCounts: DataSourceCounts, _ geometryInfo: GeometryInfo) -> ModelType,
          dataSourceCounts: @escaping () -> DataSourceCounts,
          geometryInfo: @escaping () -> GeometryInfo,
-         boundsProvider: @escaping () -> CGRect) {
+         boundsInfoProvider: @escaping () -> BoundsInfo) {
         
-        self.stateController = .init(modelProvider: model, dataSourceCountsProvider: dataSourceCounts, geometryInfoProvider: geometryInfo, boundsProvider: boundsProvider)
+        self.stateController = .init(modelProvider: model, dataSourceCountsProvider: dataSourceCounts, geometryInfoProvider: geometryInfo, boundsInfoProvider: boundsInfoProvider)
         
-        self.boundsProvider = boundsProvider
+        self.boundsInfoProvider = boundsInfoProvider
     }
     
     // MARK: Accessors
@@ -116,9 +116,9 @@ class LayoutController<ModelType: LayoutModel> {
     
     private func targetContentOffset(from originContainer: LayoutContainer<ModelType>, to targetContainer: LayoutContainer<ModelType>) -> CGPoint? {
         let oldBounds = originContainer.boundsController.bounds
-        let newBounds = self.boundsProvider()
+        let newBoundsInfo = self.boundsInfoProvider()
         
-        guard oldBounds.size > .zero && newBounds.size > .zero else { return nil }
+        guard oldBounds.size > .zero && newBoundsInfo.bounds.size > .zero else { return nil }
         
         guard let anchorBeforeUpdate = originContainer.model.contentOffsetAnchor(in: oldBounds) else { return nil }
         let anchorIndexPairAfterUpdate = self.dataChange?.indexPairAfterUpdate(for: anchorBeforeUpdate.indexPair) ?? anchorBeforeUpdate.indexPair
@@ -131,15 +131,15 @@ class LayoutController<ModelType: LayoutModel> {
         
         let contentSize = targetContainer.model.contentSize
         
-        let targetInsets = targetContainer.geometryInfo.adjustedContentInset
+        let targetInsets = newBoundsInfo.adjustedContentInset
         
         let oldFractionalPosition = (oldAnchorPosition - oldBounds.origin) / oldBounds.size.cgPoint
-        let newContentOffset = newAnchorPosition - oldFractionalPosition * newBounds.size.cgPoint
+        let newContentOffset = newAnchorPosition - oldFractionalPosition * newBoundsInfo.bounds.size.cgPoint
         
         let minContentOffset = CGPoint(x: -targetInsets.left,
                                        y: -targetInsets.top)
-        let maxContentOffset = CGPoint(x: contentSize.width + targetInsets.right - newBounds.width,
-                                       y: contentSize.height + targetInsets.bottom - newBounds.height)
+        let maxContentOffset = CGPoint(x: contentSize.width + targetInsets.right - newBoundsInfo.bounds.width,
+                                       y: contentSize.height + targetInsets.bottom - newBoundsInfo.bounds.height)
         
         let result = CGPoint(x: max(minContentOffset.x, min(maxContentOffset.x, newContentOffset.x)),
                              y: max(minContentOffset.y, min(maxContentOffset.y, newContentOffset.y)))
@@ -147,19 +147,22 @@ class LayoutController<ModelType: LayoutModel> {
         return result
     }
     
-    private func contentOffsetAdjustmentFalback(contentSizeBefore: CGSize, geometryBefore: GeometryInfo,
-                                                contentSizeAfter: CGSize, geometryAfter: GeometryInfo,
-                                                contentOffset: CGPoint) -> CGSize {
-        guard contentSizeBefore > .zero && contentSizeAfter > .zero  else { return .zero }
+    private func contentOffsetAdjustmentFalback(from originContainer: LayoutContainer<ModelType>, to targetContainer: LayoutContainer<ModelType>) -> CGSize {
+        let contentSizeBefore = originContainer.model.contentSize
+        let contentSizeAfter = targetContainer.model.contentSize
         
-        let currentContentOffset = contentOffset.cgSize
+        guard contentSizeBefore > .zero else { return .zero }
         
+        let boundsInfoBefore = originContainer.boundsController.boundsInfo
+        let boundsInfoAfter = targetContainer.boundsController.boundsInfo
         
-        let halfBoundsSizeBefore = (geometryBefore.viewSize/2)
-        let halfBoundsSizeAfter = (geometryAfter.viewSize/2)
+        let currentContentOffset = boundsInfoAfter.bounds.origin.cgSize
         
-        let insetBefore = CGSize(width: geometryBefore.adjustedContentInset.left, height: geometryBefore.adjustedContentInset.top)
-        let insetAfter = CGSize(width: geometryAfter.adjustedContentInset.left, height: geometryAfter.adjustedContentInset.top)
+        let halfBoundsSizeBefore = (originContainer.geometryInfo.viewSize/2)
+        let halfBoundsSizeAfter = (targetContainer.geometryInfo.viewSize/2)
+        
+        let insetBefore = CGSize(width: boundsInfoBefore.adjustedContentInset.left, height: boundsInfoBefore.adjustedContentInset.top)
+        let insetAfter = CGSize(width: boundsInfoAfter.adjustedContentInset.left, height: boundsInfoAfter.adjustedContentInset.top)
         let insetDiff = insetBefore - insetAfter
         
         let scrollRatio = (currentContentOffset + halfBoundsSizeBefore - insetDiff) / contentSizeBefore
@@ -187,24 +190,20 @@ class LayoutController<ModelType: LayoutModel> {
         
         if let geometryBefore = self.geometryInfo(.afterUpdate),
            newBounds.size != geometryBefore.viewSize,
-           let currentModel = self.layoutModel(.afterUpdate),
-           context.contentOffsetAdjustment == .zero {
+           let currentLayout = self.stateController.layout(.afterUpdate),
+           !context.invalidateViewSize {
             // viewSize change
             
             
             context.invalidateViewSize = true
             
             let newLayout = self.stateController.makeNewLayout(forNewBounds: newBounds)
-            context.contentSizeAdjustment = newLayout.model.contentSize - currentModel.contentSize
+            context.contentSizeAdjustment = newLayout.model.contentSize - currentLayout.model.contentSize
             
-            if let target = self.targetContentOffset(from: self.stateController.layout(.afterUpdate)!, to: newLayout) {
-                context.contentOffsetAdjustment = (target - boundsProvider().origin)
+            if let target = self.targetContentOffset(from: currentLayout, to: newLayout) {
+                context.contentOffsetAdjustment = (target - boundsInfoProvider().bounds.origin)
             } else {
-                context.contentOffsetAdjustment = self.contentOffsetAdjustmentFalback(contentSizeBefore: currentModel.contentSize,
-                                                                                      geometryBefore: geometryBefore,
-                                                                                      contentSizeAfter: newLayout.model.contentSize,
-                                                                                      geometryAfter: newLayout.geometryInfo,
-                                                                                      contentOffset: boundsProvider().origin).cgPoint
+                context.contentOffsetAdjustment = self.contentOffsetAdjustmentFalback(from: currentLayout, to: newLayout).cgPoint
             }
         }
         

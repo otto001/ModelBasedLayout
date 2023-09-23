@@ -34,9 +34,13 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
             DataSourceCounts(collectionView: self.collectionView!)
         } geometryInfo: {
             GeometryInfo(collectionView: self.collectionView!)
-        } boundsProvider: { [weak self] in
-            guard let collectionView = self?.collectionView else { return .zero }
-            return collectionView.bounds
+        } boundsInfoProvider: { [weak self] in
+            guard let collectionView = self?.collectionView else {
+                return .init(bounds: .zero, safeAreaInsets: .zero, adjustedContentInset: .zero)
+            }
+            return .init(bounds: collectionView.bounds,
+                         safeAreaInsets: collectionView.safeAreaInsets,
+                         adjustedContentInset: collectionView.adjustedContentInset)
         }
     }
     

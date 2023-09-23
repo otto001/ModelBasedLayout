@@ -49,7 +49,7 @@ class StickyController {
     }
     
     private func bounds(for stickyAttributes: StickyAttributes) -> CGRect {
-        (stickyAttributes.useSafeAreaInsets ? self.boundsController.visibleBounds : self.boundsController.bounds).inset(by: stickyAttributes.additionalInsets)
+        (stickyAttributes.useSafeAreaInsets ? self.boundsController.safeAreaBounds : self.boundsController.bounds).inset(by: stickyAttributes.additionalInsets)
     }
     
     private func baseLayoutAttributes(for element: Element) -> LayoutAttributes? {

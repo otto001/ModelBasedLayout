@@ -14,7 +14,7 @@ class LayoutStateController<ModelType: LayoutModel> {
     private(set) var modelProvider: (_ dataSourceCounts: DataSourceCounts, _ geometryInfo: GeometryInfo) -> ModelType
     private(set) var dataSourceCountsProvider: () -> DataSourceCounts
     private(set) var geometryInfoProvider: () -> GeometryInfo
-    private(set) var boundsProvider: () -> CGRect
+    private(set) var boundsInfoProvider: () -> BoundsInfo
     
     private var layoutAfterUpdate: LayoutContainer<ModelType>?
     private var layoutBeforeUpdate: LayoutContainer<ModelType>?
@@ -28,12 +28,12 @@ class LayoutStateController<ModelType: LayoutModel> {
     init(modelProvider: @escaping (_: DataSourceCounts, _: GeometryInfo) -> ModelType,
          dataSourceCountsProvider: @escaping () -> DataSourceCounts,
          geometryInfoProvider: @escaping () -> GeometryInfo,
-         boundsProvider: @escaping () -> CGRect) {
+         boundsInfoProvider: @escaping () -> BoundsInfo) {
         
         self.modelProvider = modelProvider
         self.dataSourceCountsProvider = dataSourceCountsProvider
         self.geometryInfoProvider = geometryInfoProvider
-        self.boundsProvider = boundsProvider
+        self.boundsInfoProvider = boundsInfoProvider
     }
     
     func layout(_ state: LayoutState) -> LayoutContainer<ModelType>? {
@@ -70,7 +70,7 @@ class LayoutStateController<ModelType: LayoutModel> {
         
         let model = modelProvider(dataSourceCounts, geometryInfo)
         
-        let boundsController = BoundsController(boundsProvider: self.boundsProvider, safeAreaInsets: geometryInfo.safeAreaInsets)
+        let boundsController = BoundsController(boundsInfoProvider: self.boundsInfoProvider)
         
         let stickyController = StickyController(dataSourceCounts: dataSourceCounts,
                                                 boundsController: boundsController) { element in

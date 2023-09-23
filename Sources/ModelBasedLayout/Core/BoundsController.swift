@@ -10,35 +10,25 @@ import UIKit
 
 class BoundsController {
     
-    private var boundsProvider: () -> CGRect
-    private(set) var safeAreaInsets: UIEdgeInsets = .zero
+    private var boundsInfoProvider: () -> BoundsInfo
     
-    private var _bounds: CGRect = .zero {
-        didSet {
-            self._visibleBounds = CGRect(x: self._bounds.minX + self.safeAreaInsets.left,
-                                         y:  self._bounds.minY + self.safeAreaInsets.top,
-                                         width:  self._bounds.width - self.safeAreaInsets.left - self.safeAreaInsets.right,
-                                         height:  self._bounds.height - self.safeAreaInsets.top - self.safeAreaInsets.bottom)
-        }
-    }
-    private var _visibleBounds: CGRect = .zero
+    private(set) var boundsInfo: BoundsInfo = .init(bounds: .zero, safeAreaInsets: .zero, adjustedContentInset: .zero)
     
     private var valid: Bool = false
     private(set) var frozen: Bool = false
     
     var bounds: CGRect {
         self.updateBoundsIfNeeded()
-        return self._bounds
+        return self.boundsInfo.bounds
     }
     
-    var visibleBounds: CGRect {
+    var safeAreaBounds: CGRect {
         self.updateBoundsIfNeeded()
-        return self._visibleBounds
+        return self.boundsInfo.safeAreaBounds
     }
     
-    init(boundsProvider: @escaping () -> CGRect, safeAreaInsets: UIEdgeInsets) {
-        self.boundsProvider = boundsProvider
-        self.safeAreaInsets = safeAreaInsets
+    init(boundsInfoProvider: @escaping () -> BoundsInfo) {
+        self.boundsInfoProvider = boundsInfoProvider
         self.updateBoundsIfNeeded()
     }
     
@@ -57,18 +47,14 @@ class BoundsController {
     func updateBoundsIfNeeded() {
         guard !self.valid && !self.frozen else { return }
         
-        let newBounds = self.boundsProvider()
+        let newBoundsInfo = self.boundsInfoProvider()
         
-        guard newBounds.size == self._bounds.size || self._bounds.size == .zero else {
-            return
-        }
-        
-        self._bounds = newBounds
+        self.boundsInfo = newBoundsInfo
         self.valid = true
     }
     
     func setTargetContentOffset(target contentOffset: CGPoint) {
-        self._bounds = CGRect(origin: contentOffset, size: self._bounds.size)
+        self.boundsInfo.bounds = CGRect(origin: contentOffset, size: self.boundsInfo.bounds.size)
         self.valid = true
     }
     
