@@ -50,57 +50,6 @@ struct DataBatchUpdate {
         return self.sectionReloads.contains(indexPair.section) || self.itemReloads.contains(indexPair)
     }
     
-    private mutating func processReloads(_ dataUpdates: inout [DataUpdate]) {
-        var result: [DataUpdate] = []
-        
-        for dataUpdate in dataUpdates {
-            switch dataUpdate {
-            case .reloadSection(let sectionIndexBeforeUpdate, _):
-                self.sectionReloads.insert(sectionIndexBeforeUpdate)
-            case .reloadItem(let indexPairBeforeUpdate, _):
-                self.itemReloads.insert(indexPairBeforeUpdate)
-            default:
-                result.append(dataUpdate)
-            }
-        }
-        
-        dataUpdates = result
-    }
-    
-    private func processSectionUpdates(_ dataUpdates: inout [DataUpdate]) -> ([Int], [Int]) {
-        var deletedSections = [Int]()
-        var insertedSections = [Int]()
-        
-        var index: Int = 0
-        var stop: Bool = false
-        for dataUpdate in dataUpdates {
-            guard !stop else { break }
-            
-            switch dataUpdate {
-            case .deleteSection(let sectionIndex):
-                deletedSections.append(sectionIndex)
-                index += 1
-            
-                
-            case .insertSection(let sectionIndex):
-                insertedSections.append(sectionIndex)
-                index += 1
-                
-            case .moveSection(let sectionIndexBeforeUpdate, let sectionIndexAfterUpdate):
-                deletedSections.append(sectionIndexBeforeUpdate)
-                insertedSections.append(sectionIndexAfterUpdate)
-                index += 1
-                
-            default:
-                stop = true
-                break
-            }
-        }
-        
-        dataUpdates = Array(dataUpdates[index...])
-        return (deletedSections, insertedSections)
-    }
-    
     private mutating func addUpdateItems(_ dataUpdates: [DataUpdate]) {
         
         var sectionSummary: IndexBasedSummary = .init(initialItemCount: dataSourceCounts.numberOfSections)
@@ -185,15 +134,7 @@ struct DataBatchUpdate {
                 indexPairsAfterUpdate[indexPairBeforeUpdate] = indexPairAfterUpdate
             }
         }
-//
-//        let s = indexPairsAfterUpdate.sorted(by: { (p1, p2) in
-//            p1.key < p2.key
-//        })
-//        for (a, b) in s {
-//            print("\(a) -> \(b)")
-//        }
-//
-        print()
+
     }
     
     private mutating func buildReverseAccessors() {
