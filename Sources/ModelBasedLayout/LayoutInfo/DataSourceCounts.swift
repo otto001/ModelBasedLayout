@@ -87,11 +87,11 @@ public struct DataSourceCounts {
     }
     
     public func contains(indexPair: IndexPair) -> Bool {
-        return sections.indices.contains(indexPair.section) && indexPair.item > 0 && indexPair.item < sections[indexPair.section].itemCount
+        return sections.indices.contains(indexPair.section) && indexPair.item >= 0 && indexPair.item < sections[indexPair.section].itemCount
     }
     
     public func contains(index: Int) -> Bool {
-        return index > 0 && index < itemCount
+        return index >= 0 && index < itemCount
     }
     
     public func indexPair(before indexPair: IndexPair) -> IndexPair? {
