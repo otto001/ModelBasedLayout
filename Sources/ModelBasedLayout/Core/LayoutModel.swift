@@ -17,6 +17,9 @@ public protocol LayoutModel {
     
     func layoutAttributes(for element: Element) -> LayoutAttributes?
     
+    // Prepare
+    func prepare()
+    
     // Animation
     func transitionAnimation(for element: Element, transition: ElementTransition) -> TransitionAnimation
     func layoutAttributes(for element: Element, frame: AnimationFrame) -> LayoutAttributes?
@@ -35,6 +38,10 @@ public protocol LayoutModel {
 }
 
 public extension LayoutModel {
+    
+    func prepare() {
+        
+    }
     
     func transitionAnimation(for element: Element, transition: ElementTransition) -> TransitionAnimation {
         return .opacity

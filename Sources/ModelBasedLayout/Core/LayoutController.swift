@@ -63,9 +63,13 @@ class LayoutController<ModelType: LayoutModel> {
         if self.layoutModel(.afterUpdate) == nil {
             self.stateController.pushNewLayout()
         }
+        
         self.boundsController(.afterUpdate)?.updateBoundsIfNeeded()
         
         self.targetContentOffsetAdjustment = .zero
+        
+        self.layoutModel(.afterUpdate)?.prepare()
+        self.layoutModel(.beforeUpdate)?.prepare()
     }
     
     func prepare(forCollectionViewUpdates updateItems: [UICollectionViewUpdateItem]) {
