@@ -76,6 +76,12 @@ class LayoutController<ModelType: LayoutModel> {
     
     func prepare(forCollectionViewUpdates updateItems: [UICollectionViewUpdateItem]) {
         guard !updateItems.isEmpty else { return }
+        
+        // Sometimes, we get updateItems without being invalidated first. AFAIK this only occurs if the updateItems only include reloads. To fix this, we ensure that we have a record of the previous datasource counts
+        if self.dataSourceCounts(.beforeUpdate) == nil {
+            self.stateController.pushNewLayout()
+        }
+        
         self.dataChange = DataBatchUpdate(dataSourceCounts: self.dataSourceCounts(.beforeUpdate)!, updateItems: updateItems)
         
         self.prepareTargetContentOffset()
