@@ -9,7 +9,7 @@ import UIKit
 
 
 public class InvalidationContext: UICollectionViewLayoutInvalidationContext {
-    public internal(set) var invalidateViewSize: Bool = false
+    public internal(set) var invalidateGeometryInfo: Bool = false
     public internal(set) var invalidateModel: Bool = false
     public internal(set) var invalidateStickyCache: Bool = false
     

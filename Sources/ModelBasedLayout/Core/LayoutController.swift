@@ -115,27 +115,27 @@ class LayoutController<ModelType: LayoutModel> {
     }
     
     private func targetContentOffset(from originContainer: LayoutContainer<ModelType>, to targetContainer: LayoutContainer<ModelType>) -> CGPoint? {
-        let oldBounds = originContainer.boundsController.bounds
+        let oldBounds = originContainer.boundsController.boundsInfo
         let newBoundsInfo = self.boundsInfoProvider()
         
-        guard oldBounds.size > .zero && newBoundsInfo.bounds.size > .zero else { return nil }
+        guard oldBounds.bounds.size > .zero && newBoundsInfo.bounds.size > .zero else { return nil }
         
-        guard let anchorBeforeUpdate = originContainer.model.contentOffsetAnchor(in: oldBounds) else { return nil }
-        let anchorIndexPairAfterUpdate = self.dataChange?.indexPairAfterUpdate(for: anchorBeforeUpdate.indexPair) ?? anchorBeforeUpdate.indexPair
-        let anchorAfterUpdate = Element(indexPair: anchorIndexPairAfterUpdate, elementKind: anchorBeforeUpdate.elementKind)
+        guard var contentOffsetAnchor = originContainer.model.contentOffsetAnchor(in: oldBounds) else { return nil }
         
-        guard let oldAnchorPosition = originContainer.model.layoutAttributes(for: anchorBeforeUpdate)?.frame.center,
-              let newAnchorPosition = targetContainer.model.layoutAttributes(for: anchorAfterUpdate)?.frame.center
-        else { return nil }
+        if let dataChange = dataChange {
+            if let updatedIndexPair = dataChange.indexPairAfterUpdate(for: contentOffsetAnchor.element.indexPair) {
+                contentOffsetAnchor.element.indexPair = updatedIndexPair
+            } else {
+                return nil
+            }
+        }
         
+        guard let newContentOffset = self.layoutModel(.afterUpdate)?.contentOffset(for: contentOffsetAnchor, proposedBounds: newBoundsInfo, currentBounds: oldBounds) else { return nil }
         
+
         let contentSize = targetContainer.model.contentSize
-        
         let targetInsets = newBoundsInfo.adjustedContentInset
-        
-        let oldFractionalPosition = (oldAnchorPosition - oldBounds.origin) / oldBounds.size.cgPoint
-        let newContentOffset = newAnchorPosition - oldFractionalPosition * newBoundsInfo.bounds.size.cgPoint
-        
+
         let minContentOffset = CGPoint(x: -targetInsets.left,
                                        y: -targetInsets.top)
         let maxContentOffset = CGPoint(x: contentSize.width + targetInsets.right - newBoundsInfo.bounds.width,
@@ -169,15 +169,37 @@ class LayoutController<ModelType: LayoutModel> {
         
         return (scrollRatio * contentSizeAfter - halfBoundsSizeAfter) - currentContentOffset
     }
+    
+    func targetContentOffset(forProposedContentOffset proposedContentOffset: CGPoint, withScrollingVelocity velocity: CGPoint) -> CGPoint {
+        var proposal = self.boundsInfoProvider()
+        proposal.bounds.origin = proposedContentOffset
+        
+        return self.layoutModel(.afterUpdate)?.contentOffset(proposedBounds: proposal, scrollingVelocity: velocity) ?? proposedContentOffset
+    }
    
     // MARK: Invalidation
     func shouldInvalidateLayout(forBoundsChange newBounds: CGRect) -> Bool {
+        
+        if let boundsController = self.boundsController(.afterUpdate) {
+            boundsController.freeze()
+            defer { boundsController.unfreeze() }
+            guard boundsController.bounds != newBounds else { return false }
+        }
+        
         if newBounds.size != self.geometryInfo(.afterUpdate)?.viewSize {
             return true
         }
         
         if self.stickyController(.afterUpdate)?.shouldInvalidateLayout(forBoundsChange: newBounds) == true {
             return true
+        }
+        
+        if var newBoundsInfo = self.boundsController(.afterUpdate)?.boundsInfo, newBoundsInfo.bounds != newBounds {
+            newBoundsInfo.bounds = newBounds
+            
+            if !self.layoutModel(.afterUpdate)!.elements(affectedByBoundsChange: newBoundsInfo, in: newBounds).isEmpty {
+                return true
+            }
         }
         
         return false
@@ -191,11 +213,10 @@ class LayoutController<ModelType: LayoutModel> {
         if let geometryBefore = self.geometryInfo(.afterUpdate),
            newBounds.size != geometryBefore.viewSize,
            let currentLayout = self.stateController.layout(.afterUpdate),
-           !context.invalidateViewSize {
+           !context.invalidateGeometryInfo {
             // viewSize change
             
-            
-            context.invalidateViewSize = true
+            context.invalidateGeometryInfo = true
             
             let newLayout = self.stateController.makeNewLayout(forNewBounds: newBounds)
             context.contentSizeAdjustment = newLayout.model.contentSize - currentLayout.model.contentSize
@@ -211,6 +232,15 @@ class LayoutController<ModelType: LayoutModel> {
             stickyController.configureInvalidationContext(forBoundsChange: newBounds, with: context)
         }
         
+        if var newBoundsInfo = self.boundsController(.afterUpdate)?.boundsInfo {
+            newBoundsInfo.bounds = newBounds
+            
+            let elementsToInvalidate = self.layoutModel(.afterUpdate)!.elements(affectedByBoundsChange: newBoundsInfo, in: newBounds)
+            for element in elementsToInvalidate {
+                context.invalidateElement(element)
+            }
+        }
+        
         boundsController?.unfreeze()
     }
     
@@ -219,7 +249,7 @@ class LayoutController<ModelType: LayoutModel> {
             self.stickyController(.afterUpdate)?.resetCache()
         }
         
-        if context.invalidateDataSourceCounts || context.invalidateEverything || context.invalidateModel || context.invalidateViewSize  {
+        if context.invalidateDataSourceCounts || context.invalidateEverything || context.invalidateModel || context.invalidateGeometryInfo  {
             self.stateController.pushNewLayout()
             self.boundsController(.beforeUpdate)?.freeze()
             self.stickyController(.beforeUpdate)?.willBeReplaced()

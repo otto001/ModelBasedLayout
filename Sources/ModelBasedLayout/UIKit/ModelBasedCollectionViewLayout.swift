@@ -142,7 +142,7 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
     }
     
     public override final func shouldInvalidateLayout(forBoundsChange newBounds: CGRect) -> Bool {
-        return self.controller.shouldInvalidateLayout(forBoundsChange: newBounds) || super.shouldInvalidateLayout(forBoundsChange: newBounds)
+        return self.controller.shouldInvalidateLayout(forBoundsChange: newBounds)
     }
     
     // MARK: Self Sizing Cells
@@ -163,6 +163,10 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
     // MARK: Target Content Offset
     public override final func targetContentOffset(forProposedContentOffset proposedContentOffset: CGPoint) -> CGPoint {
         self.controller.targetContentOffset(forProposedContentOffset: proposedContentOffset)
+    }
+    
+    public override final func targetContentOffset(forProposedContentOffset proposedContentOffset: CGPoint, withScrollingVelocity velocity: CGPoint) -> CGPoint {
+        self.controller.targetContentOffset(forProposedContentOffset: proposedContentOffset, withScrollingVelocity: velocity)
     }
     
     // MARK: Attrs in Rect

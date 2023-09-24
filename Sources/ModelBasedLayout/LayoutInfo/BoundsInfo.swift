@@ -8,16 +8,16 @@
 import UIKit
 
 
-struct BoundsInfo {
-    var bounds: CGRect
-    var safeAreaInsets: UIEdgeInsets
-    var adjustedContentInset: UIEdgeInsets
+public struct BoundsInfo {
+    public var bounds: CGRect
+    public var safeAreaInsets: UIEdgeInsets
+    public var adjustedContentInset: UIEdgeInsets
     
-    var safeAreaBounds: CGRect {
+    public var safeAreaBounds: CGRect {
         bounds.inset(by: safeAreaInsets)
     }
     
-    init(bounds: CGRect, safeAreaInsets: UIEdgeInsets, adjustedContentInset: UIEdgeInsets) {
+    public init(bounds: CGRect, safeAreaInsets: UIEdgeInsets, adjustedContentInset: UIEdgeInsets) {
         self.bounds = bounds
         self.safeAreaInsets = safeAreaInsets
         self.adjustedContentInset = adjustedContentInset
