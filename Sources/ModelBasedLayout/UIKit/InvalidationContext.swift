@@ -12,8 +12,11 @@ public class InvalidationContext: UICollectionViewLayoutInvalidationContext {
     public internal(set) var invalidateGeometryInfo: Bool = false
     public internal(set) var invalidateModel: Bool = false
     public internal(set) var invalidateStickyCache: Bool = false
+    internal var invalidateDynamicElements: Set<Element>? = nil
     
-    func invalidateElement(_ element: Element) {
+    internal var userCreatedContext: Bool = true
+    
+    func invalidateElement(_ element: Element, dynamic: Bool) {
         switch element.elementKind {
         case .cell:
             self.invalidateItems(at: [element.indexPair.indexPath])
@@ -26,5 +29,16 @@ public class InvalidationContext: UICollectionViewLayoutInvalidationContext {
         case .decorativeView(let elementKind):
             self.invalidateDecorationElements(ofKind: elementKind, at: [element.indexPair.indexPath])
         }
+        
+        if dynamic {
+            if self.invalidateDynamicElements == nil {
+                self.invalidateDynamicElements = .init()
+            }
+            self.invalidateDynamicElements!.insert(element)
+        }
+    }
+    
+    public func invalidateElement(_ element: Element) {
+        self.invalidateElement(element, dynamic: false)
     }
 }

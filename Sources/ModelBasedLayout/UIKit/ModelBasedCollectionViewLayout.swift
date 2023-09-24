@@ -134,6 +134,8 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
     public override final func invalidationContext(forBoundsChange newBounds: CGRect) -> UICollectionViewLayoutInvalidationContext {
         let context = super.invalidationContext(forBoundsChange: newBounds)
         
+        (context as! InvalidationContext).userCreatedContext = false
+        
         if self.collectionView != nil {
             self.controller.configureInvalidationContext(context: context as! InvalidationContext, forBoundsChange: newBounds)
         }
@@ -154,6 +156,9 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
     
     public override final func invalidationContext(forPreferredLayoutAttributes preferredAttributes: UICollectionViewLayoutAttributes, withOriginalAttributes originalAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutInvalidationContext {
         let context = super.invalidationContext(forPreferredLayoutAttributes: preferredAttributes, withOriginalAttributes: originalAttributes)
+        
+        (context as! InvalidationContext).userCreatedContext = false
+        
         self.controller.configureInvalidationContext(context: context as! InvalidationContext,
                                                      forSelfSizingElement: Element(preferredAttributes),
                                                      preferredSize: preferredAttributes.size)

@@ -243,7 +243,7 @@ class LayoutController<ModelType: LayoutModel> {
             
             let elementsToInvalidate = self.layoutModel(.afterUpdate)!.elements(affectedByBoundsChange: newBoundsInfo, in: newBounds)
             for element in elementsToInvalidate {
-                context.invalidateElement(element)
+                context.invalidateElement(element, dynamic: true)
             }
         }
         

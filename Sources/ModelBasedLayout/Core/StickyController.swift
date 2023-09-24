@@ -124,7 +124,15 @@ class StickyController {
         if context.invalidateStickyCache {
             self.resetCache()
         } else {
-            if let invalidatedSupplementaryIndexPaths = context.invalidatedSupplementaryIndexPaths {
+            if let invalidateDynamicElements = context.invalidateDynamicElements {
+                for element in invalidateDynamicElements {
+                    if self.cachedAttributes.removeValue(forKey: element) != nil {
+                        self.invalidationMap.remove(value: element)
+                    }
+                }
+            }
+            
+            if context.userCreatedContext, let invalidatedSupplementaryIndexPaths = context.invalidatedSupplementaryIndexPaths {
                 for (elementKind, indexPaths) in invalidatedSupplementaryIndexPaths {
                     for indexPath in indexPaths {
                         let element: Element = .supplementaryView(ofKind: elementKind, at: IndexPair(indexPath))
