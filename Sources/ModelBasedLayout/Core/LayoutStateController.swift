@@ -18,8 +18,11 @@ class LayoutStateController<ModelType: LayoutModel> {
     
     private var layoutAfterUpdate: LayoutContainer<ModelType>?
     private var layoutBeforeUpdate: LayoutContainer<ModelType>?
+    private var layoutBeforeUpdatePass: UInt64 = 0
     
     private var cachedLayout: LayoutContainer<ModelType>?
+    
+    private var layoutPass: UInt64 = 0
     
     var isTransitioning: Bool {
         self.layoutBeforeUpdate != nil
@@ -45,9 +48,19 @@ class LayoutStateController<ModelType: LayoutModel> {
         }
     }
     
+    func prepare() {
+        self.layoutPass &+= 1
+        
+        // Clear layoutBeforeUpdate if it is stale
+        if self.layoutBeforeUpdate != nil && self.layoutPass - self.layoutBeforeUpdatePass > 1 {
+            self.layoutBeforeUpdate = nil
+        }
+    }
     
     func pushNewLayout() {
         self.layoutBeforeUpdate = self.layoutAfterUpdate
+        self.layoutBeforeUpdatePass = self.layoutPass
+        
         self.layoutAfterUpdate = self.makeNewLayout()
         self.cachedLayout = nil
     }

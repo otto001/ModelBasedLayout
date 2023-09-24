@@ -64,6 +64,8 @@ class LayoutController<ModelType: LayoutModel> {
             self.stateController.pushNewLayout()
         }
         
+        self.stateController.prepare()
+        
         self.boundsController(.afterUpdate)?.updateBoundsIfNeeded()
         
         self.targetContentOffsetAdjustment = .zero
