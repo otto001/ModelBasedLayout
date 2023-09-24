@@ -8,7 +8,7 @@
 import Foundation
 
 
-class ChunkedRectMap<Value> {
+class ChunkedRectMap<Value: Hashable> {
     struct ChunkId: Hashable, Equatable, Comparable {
         static func < (lhs: ChunkedRectMap.ChunkId, rhs: ChunkedRectMap.ChunkId) -> Bool {
             lhs.row < rhs.row || (lhs.row == rhs.row && lhs.col < rhs.col)
@@ -18,18 +18,10 @@ class ChunkedRectMap<Value> {
         var col: Int
     }
     
-    class Entry {
-        let value: Value
-        let rect: CGRect
-        
-        init(value: Value, rect: CGRect) {
-            self.value = value
-            self.rect = rect
-        }
-    }
-    
     let chunkSize: CGSize
-    private var data: [ChunkId: [Entry]] = [:]
+    private var data: [ChunkId: Set<Value>] = [:]
+    private var rectsForValues: [Value: CGRect] = [:]
+    
     private(set) var count: Int = 0
     
     init(chunkSize: CGSize) {
@@ -57,29 +49,46 @@ class ChunkedRectMap<Value> {
         return result
     }
     
-    private func insert(_ entry: Entry, into chunkId: ChunkId) {
-        data[chunkId, default: []].append(entry)
-    }
-    
-    func insert(_ value: Value, with rect: CGRect) {
-        let entry = Entry(value: value, rect: rect)
-        let chunkIds = chunkIds(for: rect)
-        for chunkId in chunkIds {
-            insert(entry, into: chunkId)
-        }
-        count += 1
-    }
-    
     func query(_ rect: CGRect) -> [Value] {
         var results: [Value] = []
         let chunkIds = chunkIds(for: rect)
         for chunkId in chunkIds {
-            if let entries = data[chunkId] {
-                results.append(contentsOf: entries.filter { $0.rect.intersects(rect) }.map { $0.value })
+            if let values = data[chunkId] {
+                results.append(contentsOf: values.filter {
+                    rectsForValues[$0]!.intersects(rect)
+                })
             }
         }
         
         return results
+    }
+    
+    private func insert(_ value: Value, into chunkId: ChunkId) {
+        data[chunkId, default: Set()].insert(value)
+    }
+    
+    func insert(_ value: Value, with rect: CGRect) {
+        let chunkIds = chunkIds(for: rect)
+        for chunkId in chunkIds {
+            insert(value, into: chunkId)
+        }
+        rectsForValues[value] = rect
+        count += 1
+    }
+    
+    private func remove(_ value: Value, from chunkId: ChunkId) {
+        if let index = data[chunkId]?.firstIndex(of: value) {
+            data[chunkId]!.remove(at: index)
+        }
+    }
+    
+    func remove(value: Value) {
+        guard let rect = rectsForValues.removeValue(forKey: value) else { return }
+        let chunkIds = chunkIds(for: rect)
+        for chunkId in chunkIds {
+            remove(value, from: chunkId)
+        }
+        count -= 1
     }
     
     func removeAll(keepingCapacity: Bool = false) {

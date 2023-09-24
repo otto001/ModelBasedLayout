@@ -119,6 +119,23 @@ class StickyController {
             context.invalidateElement(attrs.element)
         }
     }
+    
+    func invalidate(with context: InvalidationContext) {
+        if context.invalidateStickyCache {
+            self.resetCache()
+        } else {
+            if let invalidatedSupplementaryIndexPaths = context.invalidatedSupplementaryIndexPaths {
+                for (elementKind, indexPaths) in invalidatedSupplementaryIndexPaths {
+                    for indexPath in indexPaths {
+                        let element: Element = .supplementaryView(ofKind: elementKind, at: IndexPair(indexPath))
+                        if self.cachedAttributes.removeValue(forKey: element) != nil {
+                            self.invalidationMap.remove(value: element)
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 

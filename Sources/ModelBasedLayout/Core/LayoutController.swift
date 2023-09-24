@@ -251,9 +251,8 @@ class LayoutController<ModelType: LayoutModel> {
     }
     
     func invalidateLayout(with context: InvalidationContext) {
-        if context.invalidateStickyCache {
-            self.stickyController(.afterUpdate)?.resetCache()
-        }
+
+        self.stickyController(.afterUpdate)?.invalidate(with: context)
         
         if context.invalidateDataSourceCounts || context.invalidateEverything || context.invalidateModel || context.invalidateGeometryInfo  {
             self.stateController.pushNewLayout()

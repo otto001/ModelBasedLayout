@@ -34,7 +34,7 @@ public struct Element: Hashable, Equatable {
         return Element(indexPair: IndexPair(item: 0, section: section), elementKind: .footer)
     }
     
-    public static func additionalSupplementaryView(ofKind elementKind: String, at indexPair: IndexPair) -> Self {
-        return Element(indexPair: indexPair, elementKind: .additionalSupplementaryView(elementKind))
+    public static func supplementaryView(ofKind elementKind: String, at indexPair: IndexPair) -> Self {
+        return Element(indexPair: indexPair, elementKind: .init(supplementaryOfKind: elementKind))
     }
 }
