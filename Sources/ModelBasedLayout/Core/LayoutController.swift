@@ -216,6 +216,7 @@ class LayoutController<ModelType: LayoutModel> {
         assert(boundsController?.frozen != true)
         boundsController?.freeze()
         
+
         if let geometryBefore = self.geometryInfo(.afterUpdate),
            newBounds.size != geometryBefore.viewSize,
            let currentLayout = self.stateController.layout(.afterUpdate),
@@ -238,14 +239,14 @@ class LayoutController<ModelType: LayoutModel> {
             stickyController.configureInvalidationContext(forBoundsChange: newBounds, with: context)
         }
         
-        if var newBoundsInfo = self.boundsController(.afterUpdate)?.boundsInfo {
-            newBoundsInfo.bounds = newBounds
-            
-            let elementsToInvalidate = self.layoutModel(.afterUpdate)!.elements(affectedByBoundsChange: newBoundsInfo, in: newBounds)
-            for element in elementsToInvalidate {
-                context.invalidateElement(element, dynamic: true)
-            }
+        var newBoundsInfo = self.boundsInfoProvider()
+        newBoundsInfo.bounds = newBounds
+        
+        let dynamicElementsToInvalidate = self.layoutModel(.afterUpdate)!.elements(affectedByBoundsChange: newBoundsInfo, in: newBounds)
+        for element in dynamicElementsToInvalidate {
+            context.invalidateElement(element, dynamic: true)
         }
+        
         
         boundsController?.unfreeze()
     }
