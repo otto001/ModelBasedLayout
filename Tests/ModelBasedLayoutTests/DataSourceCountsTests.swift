@@ -55,6 +55,11 @@ final class DataSourceCountsTests: XCTestCase {
         XCTAssertEqual(test.sections[3].firstItemIndexPair, IndexPair(item: 0, section: 3))
         XCTAssertEqual(test.sections[3].lastItemIndex, 199)
         XCTAssertEqual(test.sections[3].lastItemIndexPair, IndexPair(item: 24, section: 3))
+         
+    }
+    
+    func testIndexPairForIndex() {
+        let test = DataSourceCounts(sections: [100, 50, 25, 25])
         
         
         XCTAssertEqual(test.indexPair(for: 0), IndexPair(item: 0, section: 0))
@@ -67,6 +72,10 @@ final class DataSourceCountsTests: XCTestCase {
         XCTAssertEqual(test.indexPair(for: 174), IndexPair(item: 24, section: 2))
         XCTAssertEqual(test.indexPair(for: 175), IndexPair(item: 0, section: 3))
         XCTAssertEqual(test.indexPair(for: 199), IndexPair(item: 24, section: 3))
+    }
+    
+    func testIndexOfIndexPair() {
+        let test = DataSourceCounts(sections: [100, 50, 25, 25])
         
         
         XCTAssertEqual(test.index(of: IndexPair(item: 0, section: 0)), 0)
@@ -79,7 +88,10 @@ final class DataSourceCountsTests: XCTestCase {
         XCTAssertEqual(test.index(of: IndexPair(item: 24, section: 2)), 174)
         XCTAssertEqual(test.index(of: IndexPair(item: 0, section: 3)), 175)
         XCTAssertEqual(test.index(of: IndexPair(item: 24, section: 3)), 199)
-        
+    }
+    
+    func testIndexPairs() throws {
+        let test = DataSourceCounts(sections: [100, 50, 25, 25])
         
         XCTAssertEqual(test.indexPairs(for: 0..<3), [IndexPair(item: 0, section: 0), IndexPair(item: 1, section: 0), IndexPair(item: 2, section: 0)])
         XCTAssertEqual(test.indexPairs(for: 98...101), [IndexPair(item: 98, section: 0), IndexPair(item: 99, section: 0), IndexPair(item: 0, section: 1), IndexPair(item: 1, section: 1)])
@@ -107,6 +119,38 @@ final class DataSourceCountsTests: XCTestCase {
         for i in 1..<allIndexPairs.count {
             XCTAssertEqual(test.indexPair(before: allIndexPairs[i]), allIndexPairs[i - 1])
         }
+    }
+    
+    func testContains() {
+        let test = DataSourceCounts(sections: [100, 50, 25, 25])
+        
+        var allIndexPairs = (0..<100).map { IndexPair(item: $0, section: 0)}
+        allIndexPairs.append(contentsOf: (0..<50).map { IndexPair(item: $0, section: 1)})
+        allIndexPairs.append(contentsOf: (0..<25).map { IndexPair(item: $0, section: 2)})
+        allIndexPairs.append(contentsOf: (0..<25).map { IndexPair(item: $0, section: 3)})
+        
+        for (index, indexPair) in allIndexPairs.enumerated() {
+            XCTAssertTrue(test.contains(index: index))
+            XCTAssertTrue(test.contains(indexPair: indexPair))
+        }
+        
+        XCTAssertFalse(test.contains(index: -9999999999))
+        XCTAssertFalse(test.contains(index: -1))
+        XCTAssertFalse(test.contains(index: test.itemCount))
+        XCTAssertFalse(test.contains(index: test.itemCount + 1))
+        XCTAssertFalse(test.contains(index: test.itemCount + 9999999999))
+        
+        
+        XCTAssertFalse(test.contains(indexPair: IndexPair(item: -9999999999, section: -9999999999)))
+        XCTAssertFalse(test.contains(indexPair: IndexPair(item: -1, section: -1)))
+        XCTAssertFalse(test.contains(indexPair: IndexPair(item: 0, section: -1)))
+        XCTAssertFalse(test.contains(indexPair: IndexPair(item: -1, section: 0)))
+        XCTAssertFalse(test.contains(indexPair: IndexPair(item: 100, section: 0)))
+        XCTAssertFalse(test.contains(indexPair: IndexPair(item: 101, section: 0)))
+        XCTAssertFalse(test.contains(indexPair: IndexPair(item: 50, section: 1)))
+        XCTAssertFalse(test.contains(indexPair: IndexPair(item: 25, section: 2)))
+        XCTAssertFalse(test.contains(indexPair: IndexPair(item: 25, section: 3)))
+        XCTAssertFalse(test.contains(indexPair: IndexPair(item: 0, section: 4)))
     }
     
     class TestDataSource: NSObject, UICollectionViewDataSource {
