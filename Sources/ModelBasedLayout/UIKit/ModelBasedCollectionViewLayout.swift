@@ -19,6 +19,7 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
     private(set) var transitioningTo: UICollectionViewLayout?
     private(set) var transitionLayout: UICollectionViewTransitionLayout?
     
+    
     var isTransitioning: Bool {
         return self.transitioningFrom != nil || self.transitioningTo != nil
     }
@@ -56,15 +57,14 @@ public class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectio
     
     // MARK: Prepare
     public override final func prepare() {
-        self.controller.prepare()
-        
         super.prepare()
-        
+        self.controller.prepareIfNeeded()
     }
     
     // MARK: Prepare: Animated Bounds Change
     public override final func prepare(forAnimatedBoundsChange oldBounds: CGRect) {
         super.prepare(forAnimatedBoundsChange: oldBounds)
+        self.controller.prepareIfNeeded()
     }
     
     public override final func finalizeAnimatedBoundsChange() {

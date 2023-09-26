@@ -19,6 +19,9 @@ class LayoutController<ModelType: LayoutModel> {
     
     private(set) var boundsInfoProvider: () -> BoundsInfo
     
+    private var needsToPrepare: Bool = false
+    private var lastInvalidatedBounds: CGRect? = nil
+    
     init(_ model: @escaping (_ dataSourceCounts: DataSourceCounts, _ geometryInfo: GeometryInfo) -> ModelType,
          dataSourceCounts: @escaping () -> DataSourceCounts,
          geometryInfo: @escaping () -> GeometryInfo,
@@ -59,7 +62,9 @@ class LayoutController<ModelType: LayoutModel> {
     }
     
     // MARK: Prepare & Finalize
-    func prepare() {
+    func prepareIfNeeded() {
+        guard self.needsToPrepare else { return }
+        
         if self.layoutModel(.afterUpdate) == nil {
             self.stateController.pushNewLayout()
         }
@@ -72,9 +77,13 @@ class LayoutController<ModelType: LayoutModel> {
         
         self.layoutModel(.afterUpdate)?.prepare()
         self.layoutModel(.beforeUpdate)?.prepare()
+        
+        self.needsToPrepare = false
     }
     
     func prepare(forCollectionViewUpdates updateItems: [UICollectionViewUpdateItem]) {
+        self.prepareIfNeeded()
+        
         guard !updateItems.isEmpty else { return }
         
         // Sometimes, we get updateItems without being invalidated first. AFAIK this only occurs if the updateItems only include reloads. To fix this, we ensure that we have a record of the previous datasource counts
@@ -110,6 +119,7 @@ class LayoutController<ModelType: LayoutModel> {
             return
             
         }
+        
         self.targetContentOffset = result
     }
     
@@ -192,11 +202,12 @@ class LayoutController<ModelType: LayoutModel> {
     // MARK: Invalidation
     func shouldInvalidateLayout(forBoundsChange newBounds: CGRect) -> Bool {
         
-        if let boundsController = self.boundsController(.afterUpdate) {
-            boundsController.freeze()
-            defer { boundsController.unfreeze() }
-            guard boundsController.bounds != newBounds else { return false }
+        guard self.lastInvalidatedBounds != newBounds else {
+            return false
         }
+        self.lastInvalidatedBounds = newBounds
+        self.boundsController(.afterUpdate)?.invalidate()
+        self.boundsController(.afterUpdate)?.updateBoundsIfNeeded()
         
         if newBounds.size != self.geometryInfo(.afterUpdate)?.viewSize {
             return true
@@ -206,7 +217,7 @@ class LayoutController<ModelType: LayoutModel> {
             return true
         }
         
-        if var newBoundsInfo = self.boundsController(.afterUpdate)?.boundsInfo, newBoundsInfo.bounds != newBounds {
+        if var newBoundsInfo = self.boundsController(.afterUpdate)?.boundsInfo {
             newBoundsInfo.bounds = newBounds
             
             if !self.layoutModel(.afterUpdate)!.elements(affectedByBoundsChange: newBoundsInfo, in: newBounds).isEmpty {
@@ -239,6 +250,7 @@ class LayoutController<ModelType: LayoutModel> {
             } else {
                 context.contentOffsetAdjustment = self.contentOffsetAdjustmentFalback(from: currentLayout, to: newLayout).cgPoint
             }
+
         }
         
         if self.usesStickyViews(), let stickyController = self.stickyController(.afterUpdate) {
@@ -258,7 +270,8 @@ class LayoutController<ModelType: LayoutModel> {
     }
     
     func invalidateLayout(with context: InvalidationContext) {
-
+        self.needsToPrepare = true
+        
         self.stickyController(.afterUpdate)?.invalidate(with: context)
         
         if context.invalidateDataSourceCounts || context.invalidateEverything || context.invalidateModel || context.invalidateGeometryInfo  {
