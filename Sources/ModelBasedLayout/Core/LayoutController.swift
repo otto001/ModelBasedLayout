@@ -253,18 +253,22 @@ class LayoutController<ModelType: LayoutModel> {
 
         }
         
-        if self.usesStickyViews(), let stickyController = self.stickyController(.afterUpdate) {
-            stickyController.configureInvalidationContext(forBoundsChange: newBounds, with: context)
-        }
-        
         var newBoundsInfo = self.boundsInfoProvider()
         newBoundsInfo.bounds = newBounds
         
         let dynamicElementsToInvalidate = self.layoutModel(.afterUpdate)!.elements(affectedByBoundsChange: newBoundsInfo, in: newBounds)
-        for element in dynamicElementsToInvalidate {
-            context.invalidateElement(element, dynamic: true)
-        }
         
+        if !context.invalidateGeometryInfo {
+            // Explicitly invalidating elements when the view geometry changes casues intense glitches in iPad in combination with a SplitViewController set to tiling mode
+            // Therefore, only invalidate explicitly if the geometry was not invalidated
+            for element in dynamicElementsToInvalidate {
+                context.invalidateElement(element, dynamic: true)
+            }
+            
+            if self.usesStickyViews(), let stickyController = self.stickyController(.afterUpdate) {
+                stickyController.configureInvalidationContext(forBoundsChange: newBounds, with: context)
+            }
+        }
         
         boundsController?.unfreeze()
     }
@@ -307,6 +311,8 @@ class LayoutController<ModelType: LayoutModel> {
         let items = self.layoutModel(.afterUpdate)!.elements(in: rect)
         return items.compactMap { (element: Element) -> LayoutAttributes? in
             self.layoutAttributes(for: element)
+        }.filter {
+            $0.frame.intersects(rect)
         }
         
     }
