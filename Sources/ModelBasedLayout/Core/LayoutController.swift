@@ -256,12 +256,12 @@ class LayoutController<ModelType: LayoutModel> {
         var newBoundsInfo = self.boundsInfoProvider()
         newBoundsInfo.bounds = newBounds
         
-        let dynamicElementsToInvalidate = self.layoutModel(.afterUpdate)!.elements(affectedByBoundsChange: newBoundsInfo, in: newBounds)
+        let dynamicElementsToInvalidate = self.layoutModel(.afterUpdate)?.elements(affectedByBoundsChange: newBoundsInfo, in: newBounds)
         
         if !context.invalidateGeometryInfo {
             // Explicitly invalidating elements when the view geometry changes casues intense glitches in iPad in combination with a SplitViewController set to tiling mode
             // Therefore, only invalidate explicitly if the geometry was not invalidated
-            for element in dynamicElementsToInvalidate {
+            for element in (dynamicElementsToInvalidate ?? []) {
                 context.invalidateElement(element, dynamic: true)
             }
             
