@@ -152,7 +152,7 @@ class LayoutController<ModelType: LayoutModel> {
             }
         }
         
-        guard let newContentOffset = self.layoutModel(.afterUpdate)?.contentOffset(for: contentOffsetAnchor, proposedBounds: newBoundsInfo, currentBounds: oldBounds) else { return nil }
+        let newContentOffset = targetContainer.model.contentOffset(for: contentOffsetAnchor, proposedBounds: newBoundsInfo, currentBounds: oldBounds)
         
 
         let contentSize = targetContainer.model.contentSize
