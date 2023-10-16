@@ -207,9 +207,9 @@ class LayoutController<ModelType: LayoutModel> {
         }
         self.lastInvalidatedBounds = newBounds
         self.boundsController(.afterUpdate)?.invalidate()
+        self.boundsController(.afterUpdate)?.updateBoundsIfNeeded()
         
         if newBounds.size != self.geometryInfo(.afterUpdate)?.viewSize {
-            self.boundsController(.afterUpdate)?.freeze()
             return true
         }
         
