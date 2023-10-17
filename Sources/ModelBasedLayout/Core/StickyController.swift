@@ -28,7 +28,11 @@ class StickyController {
         self.boundsController = boundsController
         self.layoutAttributesProvider = layoutAttributesProvider
         
-        self.invalidationMap = .init(chunkSize: boundsController.bounds.size)
+        var chunkSize = boundsController.bounds.size
+        if chunkSize == .zero {
+            chunkSize = CGSize(width: 1_000, height: 1_000)
+        }
+        self.invalidationMap = .init(chunkSize: chunkSize)
     }
     
     func willBeReplaced() {

@@ -25,6 +25,7 @@ class ChunkedRectMap<Value: Hashable> {
     private(set) var count: Int = 0
     
     init(chunkSize: CGSize) {
+        assert(chunkSize.width > 0 && chunkSize.height > 0, "Chunksize must be above 0 in both dimensions")
         self.chunkSize = chunkSize
     }
     

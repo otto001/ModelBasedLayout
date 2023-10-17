@@ -201,15 +201,15 @@ class LayoutController<ModelType: LayoutModel> {
    
     // MARK: Invalidation
     func shouldInvalidateLayout(forBoundsChange newBounds: CGRect) -> Bool {
-        
         guard self.lastInvalidatedBounds != newBounds else {
             return false
         }
         self.lastInvalidatedBounds = newBounds
+        
         self.boundsController(.afterUpdate)?.invalidate()
+        self.boundsController(.afterUpdate)?.updateBoundsIfNeeded()
         
         if newBounds.size != self.geometryInfo(.afterUpdate)?.viewSize {
-            self.boundsController(.afterUpdate)?.freeze()
             return true
         }
         
@@ -229,38 +229,43 @@ class LayoutController<ModelType: LayoutModel> {
     }
     
     func configureInvalidationContext(context: InvalidationContext, forBoundsChange newBounds: CGRect) {
-        let boundsController = self.boundsController(.afterUpdate)
-        assert(boundsController?.frozen != true)
-        boundsController?.freeze()
         
+        guard let geometryBefore = self.geometryInfo(.afterUpdate), geometryBefore.viewSize != .zero else {
+            
+            // If we are in the initial layout pass after the collectionView was instanciated, we may have a cached viewSize of zero.
+            // In such a case, performing any actual invalidation (e.g. contentOffsetAdjusten) would be pointless and can cause crashes.
+            // Therefore, simply replace the model and move on.
+            // Note: This case should no longer happen due to models only beaing created when the viewSize is not zero, but we keep this check here just for additional safety.
+            context.invalidateModel = true
+            return
+        }
 
-        if let geometryBefore = self.geometryInfo(.afterUpdate),
-           newBounds.size != geometryBefore.viewSize,
+        if newBounds.size != geometryBefore.viewSize,
            let currentLayout = self.stateController.layout(.afterUpdate),
            !context.invalidateGeometryInfo {
-            // viewSize change
+            // If the viewSize changed, setup the contentSizeAdjustment and contentOffsetAdjustment of the InvalidationContext.
             
             context.invalidateGeometryInfo = true
             
-            let newLayout = self.stateController.makeNewLayout(forNewBounds: newBounds)
-            context.contentSizeAdjustment = newLayout.model.contentSize - currentLayout.model.contentSize
-            
-            if let target = self.targetContentOffset(from: currentLayout, to: newLayout) {
-                context.contentOffsetAdjustment = (target - boundsInfoProvider().bounds.origin)
-            } else {
-                context.contentOffsetAdjustment = self.contentOffsetAdjustmentFalback(from: currentLayout, to: newLayout).cgPoint
+            if let newLayout = self.stateController.makeNewLayout(forNewBounds: newBounds) {
+                context.contentSizeAdjustment = newLayout.model.contentSize - currentLayout.model.contentSize
+                
+                if let target = self.targetContentOffset(from: currentLayout, to: newLayout) {
+                    context.contentOffsetAdjustment = (target - boundsInfoProvider().bounds.origin)
+                } else {
+                    context.contentOffsetAdjustment = self.contentOffsetAdjustmentFalback(from: currentLayout, to: newLayout).cgPoint
+                }
             }
-
         }
-        
-        var newBoundsInfo = self.boundsInfoProvider()
-        newBoundsInfo.bounds = newBounds
-        
-        let dynamicElementsToInvalidate = self.layoutModel(.afterUpdate)?.elements(affectedByBoundsChange: newBoundsInfo, in: newBounds)
         
         if !context.invalidateGeometryInfo {
             // Explicitly invalidating elements when the view geometry changes casues intense glitches in iPad in combination with a SplitViewController set to tiling mode
             // Therefore, only invalidate explicitly if the geometry was not invalidated
+            
+            var newBoundsInfo = self.boundsInfoProvider()
+            newBoundsInfo.bounds = newBounds
+            
+            let dynamicElementsToInvalidate = self.layoutModel(.afterUpdate)?.elements(affectedByBoundsChange: newBoundsInfo, in: newBounds)
             for element in (dynamicElementsToInvalidate ?? []) {
                 context.invalidateElement(element, dynamic: true)
             }
@@ -269,8 +274,6 @@ class LayoutController<ModelType: LayoutModel> {
                 stickyController.configureInvalidationContext(forBoundsChange: newBounds, with: context)
             }
         }
-        
-        boundsController?.unfreeze()
     }
     
     func invalidateLayout(with context: InvalidationContext) {

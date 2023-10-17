@@ -73,12 +73,16 @@ class LayoutStateController<ModelType: LayoutModel> {
         self.cachedLayout = nil
     }
     
-    func makeNewLayout(forNewBounds newBounds: CGRect? = nil) -> LayoutContainer<ModelType> {
+    func makeNewLayout(forNewBounds newBounds: CGRect? = nil) -> LayoutContainer<ModelType>? {
         let dataSourceCounts = dataSourceCountsProvider()
         var geometryInfo = geometryInfoProvider()
         
         if let newBounds = newBounds {
             geometryInfo.viewSize = newBounds.size
+        }
+        
+        if geometryInfo.viewSize == .zero {
+            return nil
         }
         
         if let cachedLayout = self.cachedLayout,
@@ -91,7 +95,7 @@ class LayoutStateController<ModelType: LayoutModel> {
         
         let model = modelProvider(dataSourceCounts, geometryInfo)
         
-        let boundsController = BoundsController(boundsInfoProvider: self.boundsInfoProvider)
+        let boundsController = BoundsController(boundsInfoProvider: self.boundsInfoProvider, viewSize: geometryInfo.viewSize)
         
         // We call this once to let the model know the current bounds if it needs them
         _ = model.elements(affectedByBoundsChange: boundsController.boundsInfo, in: .zero)
