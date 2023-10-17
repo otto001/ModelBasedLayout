@@ -72,6 +72,8 @@ class BoundsController {
             // However, this change is done before the viewSize changes, so we have no way of knowing ahead of time if the safeAreaInsets change will be accompanied by a viewSize change, so we cache the old values.
             // This allows us to reset the safeAreaInsets in case the viewSize changes later.
             self.cachedBoundsInfo = self._boundsInfo
+        } else if newBoundsInfo.safeAreaInsets == self.cachedBoundsInfo?.safeAreaInsets {
+            self.cachedBoundsInfo = newBoundsInfo
         }
         
         self._boundsInfo = newBoundsInfo
