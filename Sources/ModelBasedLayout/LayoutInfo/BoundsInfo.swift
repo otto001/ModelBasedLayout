@@ -23,3 +23,7 @@ public struct BoundsInfo {
         self.adjustedContentInset = adjustedContentInset
     }
 }
+
+extension BoundsInfo: Equatable {
+    
+}

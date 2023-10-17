@@ -66,14 +66,14 @@ class BoundsController {
             }
             return
         }
-        
-        if (self._boundsInfo.safeAreaInsets != newBoundsInfo.safeAreaInsets || self._boundsInfo.adjustedContentInset != newBoundsInfo.adjustedContentInset) && self.state != .initializing {
-            // If the viewSize changes, the safeAreaInsets also often change (e.g. if the view is embedded in a UINavigationController).
-            // However, this change is done before the viewSize changes, so we have no way of knowing ahead of time if the safeAreaInsets change will be accompanied by a viewSize change, so we cache the old values.
-            // This allows us to reset the safeAreaInsets in case the viewSize changes later.
-            self.cachedBoundsInfo = self._boundsInfo
-        } else if newBoundsInfo.safeAreaInsets == self.cachedBoundsInfo?.safeAreaInsets && newBoundsInfo.adjustedContentInset == self.cachedBoundsInfo?.adjustedContentInset {
+
+        // If the viewSize changes, the safeAreaInsets also often change (e.g. if the view is embedded in a UINavigationController).
+        // However, this change is done before the viewSize changes, so we have no way of knowing ahead of time if the safeAreaInsets change will be accompanied by a viewSize change, so we cache the old values.
+        // This allows us to reset the safeAreaInsets in case the viewSize changes later.
+        if self.cachedBoundsInfo == nil {
             self.cachedBoundsInfo = newBoundsInfo
+        } else if self._boundsInfo != newBoundsInfo {
+            self.cachedBoundsInfo = self._boundsInfo
         }
         
         self._boundsInfo = newBoundsInfo
