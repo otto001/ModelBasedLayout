@@ -55,11 +55,8 @@ class BoundsController {
         guard self.state == .invalid || self.state == .initializing else { return }
         
         let newBoundsInfo = self.boundsInfoProvider()
-        
 
-        self.updateBounds(newBoundsInfo.bounds)
-        
-        guard self.state != .frozen else { return }
+        guard self.updateBounds(newBoundsInfo.bounds) else { return }
 
         if self._boundsInfo.safeAreaInsets != newBoundsInfo.safeAreaInsets {
             // If the view hieranchy of the collectionView is transitioning to another size (e.g. on device rotation), often times multiple layout passes are performed.
@@ -88,7 +85,8 @@ class BoundsController {
         self.state = .valid
     }
     
-    func updateBounds(_ newBounds: CGRect) {
+    @discardableResult
+    func updateBounds(_ newBounds: CGRect) -> Bool {
         guard newBounds.size == self.viewSize else {
             if self.state != .initializing {
                 if let cachedBoundsInfo = self.cachedBoundsInfo {
@@ -97,10 +95,11 @@ class BoundsController {
                 }
                 self.freeze()
             }
-            return
+            return false
         }
         
         self._boundsInfo.bounds = newBounds
+        return true
     }
     
 }
