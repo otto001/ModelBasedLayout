@@ -61,9 +61,6 @@ class BoundsController {
                 if let cachedBoundsInfo = self.cachedBoundsInfo {
                     // If the viewSize changes, the safeAreaInsets may also have changed. If thats the case, we will have cached it earlier and can now rely on that cached value.
                     self._boundsInfo = cachedBoundsInfo
-                    print(cachedBoundsInfo.adjustedContentInset)
-                } else {
-                    print("NO")
                 }
                 self.freeze()
             }
@@ -75,7 +72,8 @@ class BoundsController {
             // If the view hieranchy of the collectionView is transitioning to another size (e.g. on device rotation), often times multiple layout passes are performed.
             // E.g.: safeAreaInsets updated -> layout pass -> viewSize updated -> layoutPass
             // This is a problem for us, because we need the initial BoundsInfo and the final BoundsInfo in order to correctly calculate contentOffsetAdjustments etc.
-            // Therefore, we cache the boundsInfo everytime the safeAreaInsets change for the duration of the CATransaction in which they change. This allows us to reset the safeAreaInsets in case the boundsData is frozen afterwards.
+            // However, the BoundsController will only be frozen once the viewSize is update, at which point the safeAreaInsets already have been updated which we would now need to revert.
+            // Therefore, we cache the boundsInfo everytime the safeAreaInsets change for the duration of the CATransaction in which they change. This allows us to reset the safeAreaInsets in case the BoundsController is frozen afterwards.
             self.cachedBoundsInfo = self._boundsInfo
             let completionBlock = CATransaction.completionBlock()
             CATransaction.setCompletionBlock { [weak self] in
