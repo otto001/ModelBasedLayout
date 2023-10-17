@@ -61,19 +61,27 @@ class BoundsController {
                 if let cachedBoundsInfo = self.cachedBoundsInfo {
                     // If the viewSize changes, the safeAreaInsets may also have changed. If thats the case, we will have cached it earlier and can now rely on that cached value.
                     self._boundsInfo = cachedBoundsInfo
+                    print(cachedBoundsInfo.adjustedContentInset)
+                } else {
+                    print("NO")
                 }
                 self.freeze()
             }
             return
         }
 
-        // If the viewSize changes, the safeAreaInsets also often change (e.g. if the view is embedded in a UINavigationController).
-        // However, this change is done before the viewSize changes, so we have no way of knowing ahead of time if the safeAreaInsets change will be accompanied by a viewSize change, so we cache the old values.
-        // This allows us to reset the safeAreaInsets in case the viewSize changes later.
-        if self.cachedBoundsInfo == nil {
-            self.cachedBoundsInfo = newBoundsInfo
-        } else if self._boundsInfo != newBoundsInfo {
+        
+        if self._boundsInfo.safeAreaInsets != newBoundsInfo.safeAreaInsets {
+            // If the view hieranchy of the collectionView is transitioning to another size (e.g. on device rotation), often times multiple layout passes are performed.
+            // E.g.: safeAreaInsets updated -> layout pass -> viewSize updated -> layoutPass
+            // This is a problem for us, because we need the initial BoundsInfo and the final BoundsInfo in order to correctly calculate contentOffsetAdjustments etc.
+            // Therefore, we cache the boundsInfo everytime the safeAreaInsets change for the duration of the CATransaction in which they change. This allows us to reset the safeAreaInsets in case the boundsData is frozen afterwards.
             self.cachedBoundsInfo = self._boundsInfo
+            let completionBlock = CATransaction.completionBlock()
+            CATransaction.setCompletionBlock { [weak self] in
+                self?.cachedBoundsInfo = nil
+                completionBlock?()
+            }
         }
         
         self._boundsInfo = newBoundsInfo
