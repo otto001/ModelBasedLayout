@@ -96,10 +96,7 @@ class LayoutStateController<ModelType: LayoutModel> {
         let model = modelProvider(dataSourceCounts, geometryInfo)
         
         let boundsController = BoundsController(boundsInfoProvider: self.boundsInfoProvider, viewSize: geometryInfo.viewSize)
-        
-        // We call this once to let the model know the current bounds if it needs them
-        _ = model.elements(affectedByBoundsChange: boundsController.boundsInfo, in: .zero)
-        
+
         let stickyController = StickyController(dataSourceCounts: dataSourceCounts,
                                                 boundsController: boundsController) { element in
             model.layoutAttributes(for: element)

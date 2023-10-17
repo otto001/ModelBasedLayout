@@ -206,7 +206,7 @@ class LayoutController<ModelType: LayoutModel> {
         }
         self.lastInvalidatedBounds = newBounds
         
-        self.boundsController(.afterUpdate)?.updateContentOffset(newBounds.origin)
+        self.boundsController(.afterUpdate)?.updateBounds(newBounds)
         
         if newBounds.size != self.geometryInfo(.afterUpdate)?.viewSize {
             return true
