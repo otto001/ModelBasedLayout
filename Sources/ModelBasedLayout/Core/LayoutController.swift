@@ -96,7 +96,7 @@ class LayoutController<ModelType: LayoutModel> {
         self.prepareTargetContentOffset()
         
         if let targetContentOffset = self.targetContentOffset {
-            self.boundsController(.afterUpdate)?.setTargetContentOffset(target: targetContentOffset)
+            self.boundsController(.afterUpdate)?.updateContentOffset(targetContentOffset)
         }
     }
     
@@ -206,8 +206,7 @@ class LayoutController<ModelType: LayoutModel> {
         }
         self.lastInvalidatedBounds = newBounds
         
-        self.boundsController(.afterUpdate)?.invalidate()
-        self.boundsController(.afterUpdate)?.updateBoundsIfNeeded()
+        self.boundsController(.afterUpdate)?.updateContentOffset(newBounds.origin)
         
         if newBounds.size != self.geometryInfo(.afterUpdate)?.viewSize {
             return true

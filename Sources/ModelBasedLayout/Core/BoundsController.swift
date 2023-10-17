@@ -86,8 +86,11 @@ class BoundsController {
         self.state = .valid
     }
     
-    func setTargetContentOffset(target contentOffset: CGPoint) {
+    func updateContentOffset(_ contentOffset: CGPoint) {
         self.updateBoundsIfNeeded()
+        
+        guard self.state != .frozen else { return }
+        
         self._boundsInfo.bounds = CGRect(origin: contentOffset, size: self._boundsInfo.bounds.size)
         self.state = .valid
     }
