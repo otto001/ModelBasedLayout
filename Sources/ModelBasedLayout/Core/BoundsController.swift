@@ -12,18 +12,21 @@ class BoundsController {
     
     private var boundsInfoProvider: () -> BoundsInfo
     
-    private(set) var boundsInfo: BoundsInfo = .init(bounds: .zero, safeAreaInsets: .zero, adjustedContentInset: .zero)
+    private var _boundsInfo: BoundsInfo = .init(bounds: .zero, safeAreaInsets: .zero, adjustedContentInset: .zero)
     
     private var valid: Bool = false
     private(set) var frozen: Bool = false
     
-    var bounds: CGRect {
+    var boundsInfo: BoundsInfo {
         self.updateBoundsIfNeeded()
+        return self._boundsInfo
+    }
+    
+    var bounds: CGRect {
         return self.boundsInfo.bounds
     }
     
     var safeAreaBounds: CGRect {
-        self.updateBoundsIfNeeded()
         return self.boundsInfo.safeAreaBounds
     }
     
@@ -49,12 +52,12 @@ class BoundsController {
         
         let newBoundsInfo = self.boundsInfoProvider()
         
-        self.boundsInfo = newBoundsInfo
+        self._boundsInfo = newBoundsInfo
         self.valid = true
     }
     
     func setTargetContentOffset(target contentOffset: CGPoint) {
-        self.boundsInfo.bounds = CGRect(origin: contentOffset, size: self.boundsInfo.bounds.size)
+        self._boundsInfo.bounds = CGRect(origin: contentOffset, size: self._boundsInfo.bounds.size)
         self.valid = true
     }
     
