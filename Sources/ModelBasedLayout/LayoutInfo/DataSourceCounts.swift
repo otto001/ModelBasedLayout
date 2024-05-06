@@ -5,8 +5,10 @@
 //  Created by Matteo Ludwig on 16.08.23.
 //
 
+import Foundation
+#if canImport(UIKit)
 import UIKit
-
+#endif
 
 public struct DataSourceCounts {
     public let itemCount: Int
@@ -35,6 +37,7 @@ public struct DataSourceCounts {
         sections.count
     }
     
+#if canImport(UIKit)
     init(collectionView: UICollectionView) {
         
         let sectionCount = collectionView.numberOfSections
@@ -51,6 +54,7 @@ public struct DataSourceCounts {
         self.itemCount = itemCount
         self.sections = sections
     }
+#endif
     
     init(sections sectionCounts: [Int]) {
         var itemCount = 0

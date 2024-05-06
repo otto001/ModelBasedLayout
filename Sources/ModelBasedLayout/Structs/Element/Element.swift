@@ -5,8 +5,10 @@
 //  Created by Matteo Ludwig on 26.08.23.
 //
 
+import Foundation
+#if canImport(UIKit)
 import UIKit
-
+#endif
 
 public struct Element: Hashable, Equatable, Codable {
     public var indexPair: IndexPair
@@ -17,10 +19,12 @@ public struct Element: Hashable, Equatable, Codable {
         self.elementKind = elementKind
     }
     
+#if canImport(UIKit)
     init(_ collectionViewLayoutAttributes: UICollectionViewLayoutAttributes) {
         self.elementKind = ElementKind(from: collectionViewLayoutAttributes)
         self.indexPair = IndexPair(collectionViewLayoutAttributes.indexPath)
     }
+#endif
     
     public static func cell(_ indexPair: IndexPair) -> Self {
         return Element(indexPair: indexPair, elementKind: .cell)

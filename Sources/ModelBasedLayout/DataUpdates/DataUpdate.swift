@@ -5,7 +5,7 @@
 //  Created by Matteo Ludwig on 18.07.23.
 //
 
-import UIKit
+import Foundation
 
 
 enum DataUpdate: Hashable {
@@ -22,7 +22,7 @@ enum DataUpdate: Hashable {
     case deleteSection(sectionIndex: Int)
     
     
-    init?(_ updateItem: UICollectionViewUpdateItem) {
+    init?(_ updateItem: NativeCollectionViewUpdateItem) {
         switch updateItem.updateAction {
         case .delete:
             guard let indexPath = updateItem.indexPathBeforeUpdate else { return nil }

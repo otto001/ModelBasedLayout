@@ -5,7 +5,8 @@
 //  Created by Matteo Ludwig on 13.09.23.
 //
 
-import UIKit
+import Foundation
+import QuartzCore
 
 
 class BoundsController {

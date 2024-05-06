@@ -5,7 +5,7 @@
 //  Created by Matteo Ludwig on 26.08.23.
 //
 
-import UIKit
+import Foundation
 
 
 class LayoutController<ModelType: LayoutModel> {
@@ -81,7 +81,7 @@ class LayoutController<ModelType: LayoutModel> {
         self.needsToPrepare = false
     }
     
-    func prepare(forCollectionViewUpdates updateItems: [UICollectionViewUpdateItem]) {
+    func prepare(forCollectionViewUpdates updateItems: [NativeCollectionViewUpdateItem]) {
         self.prepareIfNeeded()
         
         guard !updateItems.isEmpty else { return }

@@ -5,7 +5,7 @@
 //  Created by Matteo Ludwig on 26.08.23.
 //
 
-import UIKit
+import Foundation
 
 /// A controller that manages the sticky behaviour of elements in a collection view.
 class StickyController {

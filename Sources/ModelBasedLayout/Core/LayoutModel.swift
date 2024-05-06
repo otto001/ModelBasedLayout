@@ -5,7 +5,7 @@
 //  Created by Matteo Ludwig on 18.07.23.
 //
 
-import UIKit
+import Foundation
 
 
 /// A protocol that defines the layout model of a collection view layout. The layout model is responsible for the layout of the collection view and its elements. If you want to create a custom layout, you need to implement this protocol.

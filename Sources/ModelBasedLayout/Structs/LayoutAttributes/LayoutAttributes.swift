@@ -5,8 +5,10 @@
 //  Created by Matteo Ludwig on 18.07.23.
 //
 
+import Foundation
+#if canImport(UIKit)
 import UIKit
-
+#endif
 
 /// The layout attributes of an element. Contains information about the element's geometry, visuals, and sticky attributes. This translates to `UICollectionViewLayoutAttributes` in UIKit.
 public struct LayoutAttributes: Equatable, Codable {
@@ -97,6 +99,7 @@ public struct LayoutAttributes: Equatable, Codable {
         self.transform = transform
     }
     
+#if canImport(UIKit)
     // MARK: from UIKit
     /// Initializes the layout attributes from `UICollectionViewLayoutAttributes`.
     /// - Parameter collectionViewLayoutAttributes: The `UICollectionViewLayoutAttributes` to initialize from.
@@ -146,6 +149,7 @@ public struct LayoutAttributes: Equatable, Codable {
         
         return collectionViewLayoutAttributes
     }
+#endif
     
     // MARK: Helpers
     /// Returns a copy of the layout attributes with the given index pair.

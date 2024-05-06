@@ -5,7 +5,7 @@
 //  Created by Matteo Ludwig on 18.07.23.
 //
 
-import UIKit
+import Foundation
 
 
 
@@ -28,7 +28,7 @@ struct DataBatchUpdate {
         buildReverseAccessors()
     }
     
-    init(dataSourceCounts: DataSourceCounts, updateItems: [UICollectionViewUpdateItem]) {
+    init(dataSourceCounts: DataSourceCounts, updateItems: [NativeCollectionViewUpdateItem]) {
         self = .init(dataSourceCounts: dataSourceCounts, updateItems: updateItems.compactMap {DataUpdate($0)})
     }
     

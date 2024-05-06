@@ -5,7 +5,10 @@
 //  Created by Matteo Ludwig on 01.09.23.
 //
 
+import Foundation
+#if canImport(UIKit)
 import UIKit
+#endif
 
 /// The sticky attributes of an element. Contains information about the element's sticky edges, bounds, and bounding behaviour. Must be supplied to the layout attributes for elements that should stick to the edges of the collection view.
 public struct StickyAttributes: Equatable, Codable {

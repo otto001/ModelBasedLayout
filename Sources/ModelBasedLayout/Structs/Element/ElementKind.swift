@@ -5,8 +5,10 @@
 //  Created by Matteo Ludwig on 01.09.23.
 //
 
+import Foundation
+#if canImport(UIKit)
 import UIKit
-
+#endif
 
 public enum ElementKind: Equatable, Hashable, Codable {
     case cell
@@ -15,6 +17,7 @@ public enum ElementKind: Equatable, Hashable, Codable {
     case additionalSupplementaryView(String)
     case decorativeView(String)
     
+#if canImport(UIKit)
     init(from collectionViewLayoutAttributes: UICollectionViewLayoutAttributes) {
         switch collectionViewLayoutAttributes.representedElementCategory {
         case .cell:
@@ -27,6 +30,7 @@ public enum ElementKind: Equatable, Hashable, Codable {
             fatalError("Unknown representedElementCategory")
         }
     }
+
     
     init(supplementaryOfKind elementKind: String) {
         switch elementKind {
@@ -72,4 +76,5 @@ public enum ElementKind: Equatable, Hashable, Codable {
     var isSupplementaryView: Bool {
         return self.representedElementCategory == .supplementaryView
     }
+#endif
 }
