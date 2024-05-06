@@ -258,7 +258,7 @@ class LayoutController<ModelType: LayoutModel> {
         }
         
         if !context.invalidateGeometryInfo {
-            // Explicitly invalidating elements when the view geometry changes casues intense glitches in iPad in combination with a SplitViewController set to tiling mode
+            // Explicitly invalidating elements when the view geometry changes causes intense glitches on iPad in combination with a SplitViewController set to tiling mode
             // Therefore, only invalidate explicitly if the geometry was not invalidated
             
             var newBoundsInfo = self.boundsInfoProvider()
@@ -304,7 +304,7 @@ class LayoutController<ModelType: LayoutModel> {
     }
     
     // MARK: Animations
-    func transitionAnimation(for element: Element, transition: ElementTransition, state: LayoutState) -> TransitionAnimation {
+    func transitionAnimation(for element: Element, transition: ElementTransition, state: LayoutState) -> ElementTransitionAnimation {
         self.layoutModel(state)?.transitionAnimation(for: element, transition: transition) ?? .none
     }
     
@@ -334,16 +334,24 @@ class LayoutController<ModelType: LayoutModel> {
     
     // MARK: Cells
     
+    /// Returns the layout attributes for the cell that is about to appear at the specified index pair.
+    /// - Parameter indexPair: The index pair of the cell.
+    /// - Returns: The layout attributes for the cell that is about to appear at the specified index pair.
     func layoutAttributes(forAppearingItemAt indexPair: IndexPair) -> LayoutAttributes? {
         
+        // If we have a data change, we need to check if the indexPair is affected by it.
         if let dataChange = self.dataChange {
             let reload = dataChange.willReload(indexPair, state: .afterUpdate)
             
             if let indexPairBeforeUpdate = dataChange.indexPairBeforeUpdate(for: indexPair), !reload {
+                // If the item is not new, we return the layout attributes from the beforeUpdate layout. We know that the item is not new because it has a corresponding indexPair in the beforeUpdate layout and was not marked for reload.
+                // We also need to adjust the indexPair of the beforeLayout layout attributes to the new indexPair.
                 return self.layoutModel(.beforeUpdate)!.layoutAttributes(for: .cell(indexPairBeforeUpdate))?.withIndexPair(indexPair)
             } else {
+                // If the item does not have a corresponding indexPair in the beforeUpdate layout or is marked for reload, we treat it as a new item.
                 let transition: ElementTransition = reload ? .reload : .insertion
                 
+                // Depending on the transition animation, we return the layout attributes from the afterUpdate layout with the appropriate adjustments.
                 switch self.transitionAnimation(for: .cell(indexPair), transition: transition, state: .afterUpdate) {
                 case .none:
                     return self.layoutModel(.afterUpdate)?.layoutAttributes(for: .cell(indexPair))?.offset(by: self.targetContentOffsetAdjustment)
@@ -355,10 +363,19 @@ class LayoutController<ModelType: LayoutModel> {
             }
         }
         
-        guard self.dataSourceCounts(.beforeUpdate)?.contains(indexPair: indexPair) == true else { return nil }
+        guard self.dataSourceCounts(.beforeUpdate)?.contains(indexPair: indexPair) == true else { 
+            // If the item is not in the beforeUpdate layout, we cannot return an appearing layout attribute (since it is not contained in the beforeUpdate layout), so we return nil.
+            return nil 
+        }
+
+        // If we don't have a data change, we assume that the item is not new but simply scrolled into view due to a bounds change or similar.
+        // In order to have the item animate properly, we need to return the layout attributes from the beforeUpdate layout.
         return self.layoutModel(.beforeUpdate)?.layoutAttributes(for: .cell(indexPair))
     }
     
+    /// Returns the layout attributes for the cell at the specified index pair.
+    /// - Parameter indexPair: The index pair of the cell.
+    /// - Returns: The layout attributes for the cell at the specified index pair.
     func layoutAttributes(forCellAt indexPair: IndexPair) -> LayoutAttributes? {
         let layoutAttrs = self.layoutModel(.afterUpdate)?.layoutAttributes(for: .cell(indexPair))
         return layoutAttrs

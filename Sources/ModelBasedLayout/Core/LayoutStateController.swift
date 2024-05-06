@@ -97,8 +97,7 @@ class LayoutStateController<ModelType: LayoutModel> {
         
         let boundsController = BoundsController(boundsInfoProvider: self.boundsInfoProvider, viewSize: geometryInfo.viewSize)
 
-        let stickyController = StickyController(dataSourceCounts: dataSourceCounts,
-                                                boundsController: boundsController) { element in
+        let stickyController = StickyController(boundsController: boundsController) { element in
             model.layoutAttributes(for: element)
         }
         
