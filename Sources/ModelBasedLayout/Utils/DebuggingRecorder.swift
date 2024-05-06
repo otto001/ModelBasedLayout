@@ -14,6 +14,7 @@ extension UICollectionViewUpdateItem.Action: Codable {
 
 public class DebuggingRecorder {
     public var entries: [Entry] = []
+    internal var playbackIndex: Int = 0
     
     public init() {
         self.entries = []
@@ -25,6 +26,12 @@ public class DebuggingRecorder {
     
     public func encodedEntries() throws -> Data {
         return try JSONEncoder().encode(entries)
+    }
+    
+    internal func nextEntry() -> Entry? {
+        guard self.playbackIndex < self.entries.endIndex else { return nil }
+        defer { self.playbackIndex += 1}
+        return self.entries[self.playbackIndex]
     }
 }
 
@@ -61,6 +68,10 @@ extension DebuggingRecorder {
         }
     }
     public enum Entry: Equatable, Codable {
+        case dataSourceCountsProvider(DataSourceCounts)
+        case geometryInfoProvider(GeometryInfo)
+        case boundsProvider(BoundsInfo)
+        
         case collectionViewContentSize(result: CGSize)
         
         case prepare

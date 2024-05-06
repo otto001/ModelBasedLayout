@@ -10,7 +10,7 @@ import Foundation
 import UIKit
 #endif
 
-public struct GeometryInfo: Equatable {
+public struct GeometryInfo: Equatable, Codable {
     
     public var viewSize: CGSize
     public var safeAreaInsets: NativeEdgeInsets

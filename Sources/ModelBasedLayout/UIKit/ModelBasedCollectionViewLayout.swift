@@ -30,24 +30,39 @@ open class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectionV
         self.controller.layoutModel(.afterUpdate)
     }
     
-    public init(_ model: @escaping (_ dataSourceCounts: DataSourceCounts, _ geometryInfo: GeometryInfo) -> ModelType) {
-
+    internal init(_ model: @escaping (_ dataSourceCounts: DataSourceCounts, _ geometryInfo: GeometryInfo) -> ModelType, 
+                 dataSourceCounts: @escaping () -> DataSourceCounts,
+                 geometryInfo: @escaping () -> GeometryInfo,
+                 boundsInfoProvider: @escaping () -> BoundsInfo) {
         super.init()
-        self.controller = .init(model) {
-            DataSourceCounts(collectionView: self.collectionView!)
-        } geometryInfo: {
-            GeometryInfo(collectionView: self.collectionView!)
-        } boundsInfoProvider: { [weak self] in
-            guard let collectionView = self?.collectionView else {
-                return .init(bounds: .zero, safeAreaInsets: .zero, adjustedContentInset: .zero)
+        self.controller = .init(model, dataSourceCounts: dataSourceCounts, geometryInfo: geometryInfo, boundsInfoProvider: boundsInfoProvider)
+    }
+    
+    public init(_ model: @escaping (_ dataSourceCounts: DataSourceCounts, _ geometryInfo: GeometryInfo) -> ModelType) {
+        
+        super.init()
+        self.controller = .init(model) { [unowned self] in
+            let result = DataSourceCounts(collectionView: self.collectionView!)
+            self.debuggingRecorder?.record(.dataSourceCountsProvider(result))
+            return result
+        } geometryInfo: {  [unowned self] in
+            let result = GeometryInfo(collectionView: self.collectionView!)
+            self.debuggingRecorder?.record(.geometryInfoProvider(result))
+            return result
+        } boundsInfoProvider: { [unowned self] in
+            guard let collectionView = self.collectionView else {
+                self.debuggingRecorder?.record(.boundsProvider(BoundsInfo(bounds: .zero, safeAreaInsets: .zero, adjustedContentInset: .zero)))
+                return BoundsInfo(bounds: .zero, safeAreaInsets: .zero, adjustedContentInset: .zero)
             }
-            return .init(bounds: collectionView.bounds,
-                         safeAreaInsets: collectionView.safeAreaInsets,
-                         adjustedContentInset: collectionView.adjustedContentInset)
+            let result =  BoundsInfo(bounds: collectionView.bounds,
+                                     safeAreaInsets: collectionView.safeAreaInsets,
+                                     adjustedContentInset: collectionView.adjustedContentInset)
+            self.debuggingRecorder?.record(.boundsProvider(result))
+            return result
         }
     }
     
-
+    
     required public init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
@@ -78,7 +93,7 @@ open class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectionV
         super.finalizeAnimatedBoundsChange()
         self.controller.finalize()
     }
-
+    
     // MARK: Prepare: Collection View Updates
     public override func prepare(forCollectionViewUpdates updateItems: [UICollectionViewUpdateItem]) {
         self.debuggingRecorder?.record(.prepareForCollectionViewUpdates(updateItems: updateItems.map { .init(from: $0) }))
@@ -93,34 +108,34 @@ open class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectionV
     }
     
     // MARK: Prepare: Transitions
-//    public override func prepareForTransition(from oldLayout: UICollectionViewLayout) {
-//        if let transitionLayout = oldLayout as? UICollectionViewTransitionLayout {
-//            self.transitionLayout = transitionLayout
-//            self.transitioningFrom = transitionLayout.currentLayout
-//        } else {
-//            self.transitioningFrom = oldLayout
-//        }
-//
-//        super.prepareForTransition(from: oldLayout)
-//    }
-//
-//    public override func prepareForTransition(to newLayout: UICollectionViewLayout) {
-//        if let transitionLayout = newLayout as? UICollectionViewTransitionLayout {
-//            self.transitionLayout = transitionLayout
-//            self.transitioningTo = transitionLayout.nextLayout
-//        } else {
-//            self.transitioningTo = newLayout
-//        }
-//
-//        super.prepareForTransition(to: newLayout)
-//    }
-//
-//    public override func finalizeLayoutTransition() {
-//        self.transitioningFrom = nil
-//        self.transitioningTo = nil
-//        super.finalizeLayoutTransition()
-//    }
-
+    //    public override func prepareForTransition(from oldLayout: UICollectionViewLayout) {
+    //        if let transitionLayout = oldLayout as? UICollectionViewTransitionLayout {
+    //            self.transitionLayout = transitionLayout
+    //            self.transitioningFrom = transitionLayout.currentLayout
+    //        } else {
+    //            self.transitioningFrom = oldLayout
+    //        }
+    //
+    //        super.prepareForTransition(from: oldLayout)
+    //    }
+    //
+    //    public override func prepareForTransition(to newLayout: UICollectionViewLayout) {
+    //        if let transitionLayout = newLayout as? UICollectionViewTransitionLayout {
+    //            self.transitionLayout = transitionLayout
+    //            self.transitioningTo = transitionLayout.nextLayout
+    //        } else {
+    //            self.transitioningTo = newLayout
+    //        }
+    //
+    //        super.prepareForTransition(to: newLayout)
+    //    }
+    //
+    //    public override func finalizeLayoutTransition() {
+    //        self.transitioningFrom = nil
+    //        self.transitioningTo = nil
+    //        super.finalizeLayoutTransition()
+    //    }
+    
     // MARK: Invalidation
     public func invalidateModel() {
         self.debuggingRecorder?.record(.invalidateModel)
@@ -165,7 +180,7 @@ open class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectionV
     
     public override func shouldInvalidateLayout(forPreferredLayoutAttributes preferredAttributes: UICollectionViewLayoutAttributes, withOriginalAttributes originalAttributes: UICollectionViewLayoutAttributes) -> Bool {
         let result = self.controller.shouldInvalidateLayout(forSelfSizingElement: .init(preferredAttributes),
-                                                      preferredSize: preferredAttributes.size)
+                                                            preferredSize: preferredAttributes.size)
         self.debuggingRecorder?.record(.shouldInvalidateLayoutForPreferredLayoutAttributes(preferredAttributes: .init(preferredAttributes),
                                                                                            originalAttributes: .init(originalAttributes),
                                                                                            result: result))
@@ -211,14 +226,14 @@ open class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectionV
         self.debuggingRecorder?.record(.initialLayoutAttributesForAppearingItem(indexPath: .init(indexPath), result: result))
         return result?.forLayout()
     }
-
+    
     public override func layoutAttributesForItem(at indexPath: IndexPath) -> UICollectionViewLayoutAttributes? {
         guard indexPath.count == 2 else { return nil }
         let result = self.controller.layoutAttributes(forCellAt: .init(indexPath))
         self.debuggingRecorder?.record(.layoutAttributesForItem(indexPath: .init(indexPath), result: result))
         return result?.forLayout()
     }
-
+    
     public override func finalLayoutAttributesForDisappearingItem(at indexPath: IndexPath) -> UICollectionViewLayoutAttributes? {
         guard indexPath.count == 2 else { return nil }
         let result = self.controller.layoutAttributes(forDisappearingItemAt: .init(indexPath))

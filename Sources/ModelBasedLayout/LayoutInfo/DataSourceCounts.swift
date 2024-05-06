@@ -10,12 +10,12 @@ import Foundation
 import UIKit
 #endif
 
-public struct DataSourceCounts {
+public struct DataSourceCounts: Codable {
     public let itemCount: Int
     public let sections: [SectionData]
     
     
-    public struct SectionData {
+    public struct SectionData: Codable {
         public let section: Int
         public let itemCount: Int
         public let firstItemIndex: Int
