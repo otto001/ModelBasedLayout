@@ -9,7 +9,7 @@ import UIKit
 
 
 /// The layout attributes of an element. Contains information about the element's geometry, visuals, and sticky attributes. This translates to `UICollectionViewLayoutAttributes` in UIKit.
-public struct LayoutAttributes {
+public struct LayoutAttributes: Equatable, Codable {
     // MARK: Element
     // The element that the layout attributes belong to.
     public private(set) var element: Element

@@ -8,7 +8,7 @@
 import UIKit
 
 
-public enum ElementKind: Equatable, Hashable {
+public enum ElementKind: Equatable, Hashable, Codable {
     case cell
     case header
     case footer

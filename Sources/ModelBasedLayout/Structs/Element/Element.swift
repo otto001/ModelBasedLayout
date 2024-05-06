@@ -8,7 +8,7 @@
 import UIKit
 
 
-public struct Element: Hashable, Equatable {
+public struct Element: Hashable, Equatable, Codable {
     public var indexPair: IndexPair
     public var elementKind: ElementKind
     

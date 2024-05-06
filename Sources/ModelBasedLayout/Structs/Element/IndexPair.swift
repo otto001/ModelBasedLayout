@@ -8,7 +8,7 @@
 import Foundation
 
 
-public struct IndexPair: Hashable, Equatable {
+public struct IndexPair: Hashable, Equatable, Codable {
     
     public var item: Int
     public var section: Int

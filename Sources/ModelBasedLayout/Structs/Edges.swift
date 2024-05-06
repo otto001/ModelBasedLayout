@@ -8,7 +8,7 @@
 import Foundation
 
 /// A set of edges. Used to specify the edges of a rectangle. Options are `top`, `bottom`, `left`, and `right`.
-public struct Edges: OptionSet {
+public struct Edges: OptionSet, Codable {
     public let rawValue: UInt8
     
     public init(rawValue: UInt8) {

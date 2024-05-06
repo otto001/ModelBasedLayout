@@ -8,9 +8,9 @@
 import UIKit
 
 /// The sticky attributes of an element. Contains information about the element's sticky edges, bounds, and bounding behaviour. Must be supplied to the layout attributes for elements that should stick to the edges of the collection view.
-public struct StickyAttributes {
+public struct StickyAttributes: Equatable, Codable {
     /// How the element should behave once it reaches the sticky edges.
-    public enum BoundingBehaviour {
+    public enum BoundingBehaviour: Codable {
 
         /// The element will stick to the sticky edges as long as it remains fully within the sticky bounds.
         case push
