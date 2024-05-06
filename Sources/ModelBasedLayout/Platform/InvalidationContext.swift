@@ -5,10 +5,15 @@
 //  Created by Matteo Ludwig on 13.09.23.
 //
 
+#if canImport(UIKit)
 import UIKit
+#elseif os(macOS)
+import AppKit
+#endif
+
 
 /// A custom invalidation context that allows to invalidate specific elements and caches.
-public class InvalidationContext: UICollectionViewLayoutInvalidationContext {
+public class InvalidationContext: NativeCollectionViewLayoutInvalidationContext {
 
     /// The geometry info of the layout should be invalidated (e.g., after device rotation/view size change). This will cause the layout to swap the model and recalculate the layout.
     public internal(set) var invalidateGeometryInfo: Bool = false
@@ -28,9 +33,9 @@ public class InvalidationContext: UICollectionViewLayoutInvalidationContext {
         case .cell:
             self.invalidateItems(at: [element.indexPair.indexPath])
         case .header:
-            self.invalidateSupplementaryElements(ofKind: UICollectionView.elementKindSectionHeader, at: [element.indexPair.indexPath])
+            self.invalidateSupplementaryElements(ofKind: NativeCollectionView.elementKindSectionHeader, at: [element.indexPair.indexPath])
         case .footer:
-            self.invalidateSupplementaryElements(ofKind: UICollectionView.elementKindSectionFooter, at: [element.indexPair.indexPath])
+            self.invalidateSupplementaryElements(ofKind: NativeCollectionView.elementKindSectionFooter, at: [element.indexPair.indexPath])
         case .additionalSupplementaryView(let elementKind):
             self.invalidateSupplementaryElements(ofKind: elementKind, at: [element.indexPair.indexPath])
         case .decorativeView(let elementKind):

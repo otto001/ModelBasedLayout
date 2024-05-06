@@ -8,6 +8,8 @@
 import Foundation
 #if canImport(UIKit)
 import UIKit
+#elseif os(macOS)
+import AppKit
 #endif
 
 public enum ElementKind: Equatable, Hashable, Codable {
@@ -16,16 +18,25 @@ public enum ElementKind: Equatable, Hashable, Codable {
     case footer
     case additionalSupplementaryView(String)
     case decorativeView(String)
-    
-#if canImport(UIKit)
-    init(from collectionViewLayoutAttributes: UICollectionViewLayoutAttributes) {
+
+    init(from collectionViewLayoutAttributes: NativeCollectionViewLayoutAttributes) {
         switch collectionViewLayoutAttributes.representedElementCategory {
+#if canImport(UIKit)
         case .cell:
             self = .cell
+#elseif os(macOS)
+        case .item:
+            self = .cell
+#endif
+            
         case .supplementaryView:
             self = .init(supplementaryOfKind: collectionViewLayoutAttributes.representedElementKind!)
         case .decorationView:
             self = .decorativeView(collectionViewLayoutAttributes.representedElementKind!)
+#if os(macOS)
+        case .interItemGap:
+            fatalError("interItemGaps are not supported")
+#endif
         @unknown default:
             fatalError("Unknown representedElementCategory")
         }
@@ -34,16 +45,17 @@ public enum ElementKind: Equatable, Hashable, Codable {
     
     init(supplementaryOfKind elementKind: String) {
         switch elementKind {
-        case UICollectionView.elementKindSectionHeader:
+        case NativeCollectionView.elementKindSectionHeader:
             self = .header
-        case UICollectionView.elementKindSectionFooter:
+        case NativeCollectionView.elementKindSectionFooter:
             self = .footer
         default:
             self = .additionalSupplementaryView(elementKind)
         }
     }
     
-    var representedElementCategory: UICollectionView.ElementCategory {
+    var representedElementCategory: NativeCollectionViewElementCategory {
+        
         switch self {
         case .cell:
             return .cell
@@ -63,9 +75,9 @@ public enum ElementKind: Equatable, Hashable, Codable {
         case .cell:
             return nil
         case .header:
-            return UICollectionView.elementKindSectionHeader
+            return NativeCollectionView.elementKindSectionHeader
         case .footer:
-            return UICollectionView.elementKindSectionFooter
+            return NativeCollectionView.elementKindSectionFooter
         case .additionalSupplementaryView(let string):
             return string
         case .decorativeView(let string):
@@ -76,5 +88,5 @@ public enum ElementKind: Equatable, Hashable, Codable {
     var isSupplementaryView: Bool {
         return self.representedElementCategory == .supplementaryView
     }
-#endif
+
 }

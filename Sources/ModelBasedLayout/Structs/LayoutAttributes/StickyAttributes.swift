@@ -8,10 +8,12 @@
 import Foundation
 #if canImport(UIKit)
 import UIKit
+#elseif os(macOS)
+import AppKit
 #endif
 
 /// The sticky attributes of an element. Contains information about the element's sticky edges, bounds, and bounding behaviour. Must be supplied to the layout attributes for elements that should stick to the edges of the collection view.
-public struct StickyAttributes: Equatable, Codable {
+public struct StickyAttributes {
     /// How the element should behave once it reaches the sticky edges.
     public enum BoundingBehaviour: Codable {
 
@@ -34,7 +36,7 @@ public struct StickyAttributes: Equatable, Codable {
     public var boundingBehaviour: BoundingBehaviour
     
     /// Additional insets that should be applied to the bounds of the collection view when sticking to its edges.
-    public var additionalInsets: UIEdgeInsets
+    public var additionalInsets: NativeEdgeInsets
 
     /// A boolean value that determines if the element should respect the safe area insets of the collection view when sticking to its edges.
     public var useSafeAreaInsets: Bool
@@ -48,7 +50,7 @@ public struct StickyAttributes: Equatable, Codable {
     public init(stickyEdges: Edges = .all,
                 stickyBounds: CGRect = .zero,
                 boundingBehaviour: BoundingBehaviour = .push,
-                additionalInsets: UIEdgeInsets = .zero,
+                additionalInsets: NativeEdgeInsets = NativeEdgeInsets(),
                 useSafeAreaInsets: Bool = true) {
         self.stickyEdges = stickyEdges
         self.stickyBounds = stickyBounds

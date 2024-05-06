@@ -8,9 +8,11 @@
 import Foundation
 #if canImport(UIKit)
 import UIKit
+#elseif os(macOS)
+import AppKit
 #endif
 
-public struct GeometryInfo: Equatable, Codable {
+public struct GeometryInfo: Equatable {
     
     public var viewSize: CGSize
     public var safeAreaInsets: NativeEdgeInsets
@@ -20,10 +22,10 @@ public struct GeometryInfo: Equatable, Codable {
         self.safeAreaInsets = safeAreaInsets
     }
     
-#if canImport(UIKit)
-    init(collectionView: UICollectionView) {
+
+    init(collectionView: NativeCollectionView) {
         self.viewSize = collectionView.bounds.size
         self.safeAreaInsets = collectionView.safeAreaInsets
     }
-#endif
+
 }

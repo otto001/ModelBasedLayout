@@ -8,7 +8,7 @@
 import Foundation
 
 
-public struct BoundsInfo: Codable {
+public struct BoundsInfo {
     public var bounds: CGRect
     public var safeAreaInsets: NativeEdgeInsets
     public var adjustedContentInset: NativeEdgeInsets

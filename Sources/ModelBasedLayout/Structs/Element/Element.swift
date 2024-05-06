@@ -8,6 +8,8 @@
 import Foundation
 #if canImport(UIKit)
 import UIKit
+#elseif os(macOS)
+import AppKit
 #endif
 
 public struct Element: Hashable, Equatable, Codable {
@@ -19,12 +21,16 @@ public struct Element: Hashable, Equatable, Codable {
         self.elementKind = elementKind
     }
     
+    init?(_ collectionViewLayoutAttributes: NativeCollectionViewLayoutAttributes) {
 #if canImport(UIKit)
-    init(_ collectionViewLayoutAttributes: UICollectionViewLayoutAttributes) {
-        self.elementKind = ElementKind(from: collectionViewLayoutAttributes)
         self.indexPair = IndexPair(collectionViewLayoutAttributes.indexPath)
-    }
+#elseif os(macOS)
+        guard let indexPath = collectionViewLayoutAttributes.indexPath else { return nil }
+        self.indexPair = IndexPair(indexPath)
 #endif
+        self.elementKind = ElementKind(from: collectionViewLayoutAttributes)
+        
+    }
     
     public static func cell(_ indexPair: IndexPair) -> Self {
         return Element(indexPair: indexPair, elementKind: .cell)

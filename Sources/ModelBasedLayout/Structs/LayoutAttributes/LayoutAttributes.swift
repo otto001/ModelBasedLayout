@@ -8,10 +8,12 @@
 import Foundation
 #if canImport(UIKit)
 import UIKit
+#elseif os(macOS)
+import AppKit
 #endif
 
 /// The layout attributes of an element. Contains information about the element's geometry, visuals, and sticky attributes. This translates to `UICollectionViewLayoutAttributes` in UIKit.
-public struct LayoutAttributes: Equatable, Codable {
+public struct LayoutAttributes {
     // MARK: Element
     // The element that the layout attributes belong to.
     public private(set) var element: Element
@@ -99,13 +101,18 @@ public struct LayoutAttributes: Equatable, Codable {
         self.transform = transform
     }
     
-#if canImport(UIKit)
+
     // MARK: from UIKit
     /// Initializes the layout attributes from `UICollectionViewLayoutAttributes`.
     /// - Parameter collectionViewLayoutAttributes: The `UICollectionViewLayoutAttributes` to initialize from.
     /// - Note: Some properties are not supported by `LayoutAttributes` and are not copied. These properties include `transform3D`.
-    public init(_ collectionViewLayoutAttributes: UICollectionViewLayoutAttributes) {
+    public init?(_ collectionViewLayoutAttributes: NativeCollectionViewLayoutAttributes) {
+#if canImport(UIKit)
         self.element = .init(indexPair: .init(collectionViewLayoutAttributes.indexPath), elementKind: .init(from: collectionViewLayoutAttributes))
+#elseif os(macOS)
+        guard let indexPath = collectionViewLayoutAttributes.indexPath else { return nil }
+        self.element = .init(indexPair: .init(indexPath), elementKind: .init(from: collectionViewLayoutAttributes))
+#endif
         
         
         self._frame = collectionViewLayoutAttributes.frame
@@ -113,8 +120,12 @@ public struct LayoutAttributes: Equatable, Codable {
         
         self.alpha = collectionViewLayoutAttributes.alpha
         self.isHidden = collectionViewLayoutAttributes.isHidden
-        
+    
+#if canImport(UIKit)
         self.transform = collectionViewLayoutAttributes.transform
+#elseif os(macOS)
+        self.transform = .identity
+#endif
         //self.transform3D = collectionViewLayoutAttributes.transform3D
     }
     
@@ -122,26 +133,32 @@ public struct LayoutAttributes: Equatable, Codable {
     /// Returns the layout attributes as `UICollectionViewLayoutAttributes`.
     /// - Returns: The layout attributes as `UICollectionViewLayoutAttributes`.
     /// - Note: Some properties are not supported by `LayoutAttributes` and are set to default values. These properties include `transform3D`.
-    public func forLayout() -> UICollectionViewLayoutAttributes {
-        let collectionViewLayoutAttributes: UICollectionViewLayoutAttributes
+    public func forLayout() -> NativeCollectionViewLayoutAttributes {
+        let collectionViewLayoutAttributes: NativeCollectionViewLayoutAttributes
         
         
         switch self.element.elementKind {
         case .cell:
-            collectionViewLayoutAttributes = UICollectionViewLayoutAttributes(forCellWith: element.indexPair.indexPath)
+#if canImport(UIKit)
+            collectionViewLayoutAttributes = NativeCollectionViewLayoutAttributes(forCellWith: element.indexPair.indexPath)
+#elseif os(macOS)
+            collectionViewLayoutAttributes = NativeCollectionViewLayoutAttributes(forItemWith: element.indexPair.indexPath)
+#endif
         case .header:
-            collectionViewLayoutAttributes = UICollectionViewLayoutAttributes(forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader, with: element.indexPair.indexPath)
+            collectionViewLayoutAttributes = NativeCollectionViewLayoutAttributes(forSupplementaryViewOfKind: NativeCollectionView.elementKindSectionHeader, with: element.indexPair.indexPath)
         case .footer:
-            collectionViewLayoutAttributes = UICollectionViewLayoutAttributes(forSupplementaryViewOfKind: UICollectionView.elementKindSectionFooter, with: element.indexPair.indexPath)
+            collectionViewLayoutAttributes = NativeCollectionViewLayoutAttributes(forSupplementaryViewOfKind: NativeCollectionView.elementKindSectionFooter, with: element.indexPair.indexPath)
         case .additionalSupplementaryView(let elementKind):
-            collectionViewLayoutAttributes = UICollectionViewLayoutAttributes(forSupplementaryViewOfKind: elementKind, with: element.indexPair.indexPath)
+            collectionViewLayoutAttributes = NativeCollectionViewLayoutAttributes(forSupplementaryViewOfKind: elementKind, with: element.indexPair.indexPath)
         case .decorativeView(let elementKind):
-            collectionViewLayoutAttributes = UICollectionViewLayoutAttributes(forDecorationViewOfKind: elementKind, with: element.indexPair.indexPath)
+            collectionViewLayoutAttributes = NativeCollectionViewLayoutAttributes(forDecorationViewOfKind: elementKind, with: element.indexPair.indexPath)
         }
         
         collectionViewLayoutAttributes.frame = self._frame
-        collectionViewLayoutAttributes.transform = self.transform
         
+#if canImport(UIKit)
+        collectionViewLayoutAttributes.transform = self.transform
+#endif
         
         collectionViewLayoutAttributes.alpha = self.alpha
         collectionViewLayoutAttributes.isHidden = self.isHidden
@@ -149,7 +166,7 @@ public struct LayoutAttributes: Equatable, Codable {
         
         return collectionViewLayoutAttributes
     }
-#endif
+
     
     // MARK: Helpers
     /// Returns a copy of the layout attributes with the given index pair.

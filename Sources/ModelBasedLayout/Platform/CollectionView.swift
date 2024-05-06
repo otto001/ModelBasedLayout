@@ -5,6 +5,7 @@
 //  Created by Matteo Ludwig on 01.08.23.
 //
 
+#if canImport(UIKit)
 import UIKit
 
 
@@ -19,3 +20,7 @@ open class CollectionView: UICollectionView {
         super.layoutSubviews()
     }
 }
+#elseif os(macOS)
+import AppKit
+open class CollectionView: NSCollectionView {}
+#endif

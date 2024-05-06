@@ -8,6 +8,8 @@
 import Foundation
 #if canImport(UIKit)
 import UIKit
+#elseif os(macOS)
+import AppKit
 #endif
 
 public struct DataSourceCounts: Codable {
@@ -37,8 +39,7 @@ public struct DataSourceCounts: Codable {
         sections.count
     }
     
-#if canImport(UIKit)
-    init(collectionView: UICollectionView) {
+    init(collectionView: NativeCollectionView) {
         
         let sectionCount = collectionView.numberOfSections
         
@@ -54,7 +55,7 @@ public struct DataSourceCounts: Codable {
         self.itemCount = itemCount
         self.sections = sections
     }
-#endif
+
     
     init(sections sectionCounts: [Int]) {
         var itemCount = 0
