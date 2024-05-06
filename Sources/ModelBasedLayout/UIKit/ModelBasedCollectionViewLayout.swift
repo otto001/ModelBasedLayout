@@ -19,7 +19,7 @@ open class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: UICollectionV
     private(set) var transitioningTo: UICollectionViewLayout?
     private(set) var transitionLayout: UICollectionViewTransitionLayout?
     
-    private var debuggingRecorder: DebuggingRecorder?
+    public var debuggingRecorder: DebuggingRecorder?
     
     
     var isTransitioning: Bool {

@@ -15,11 +15,15 @@ extension UICollectionViewUpdateItem.Action: Codable {
 public class DebuggingRecorder {
     public var entries: [Entry] = []
     
-    func record(_ entry: Entry) {
+    public init() {
+        self.entries = []
+    }
+    
+    public func record(_ entry: Entry) {
         self.entries.append(entry)
     }
     
-    func encodedEntries() throws -> Data {
+    public func encodedEntries() throws -> Data {
         return try JSONEncoder().encode(entries)
     }
 }
