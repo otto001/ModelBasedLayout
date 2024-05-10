@@ -27,7 +27,9 @@ public struct GeometryInfo: Equatable {
 #if canImport(UIKit)
         self.viewSize = collectionView.bounds.size
 #elseif os(macOS)
-        self.viewSize = collectionView.visibleRect.size
+        let bounds = collectionView.bounds
+        let visibleRect = collectionView.visibleRect
+        self.viewSize = CGSize(width: min(bounds.width, visibleRect.width), height: min(bounds.height, visibleRect.height))
 #endif
        
         self.safeAreaInsets = collectionView.safeAreaInsets

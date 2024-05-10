@@ -91,7 +91,9 @@ class LayoutController<ModelType: LayoutModel> {
             self.stateController.pushNewLayout()
         }
         
-        self.dataChange = DataBatchUpdate(dataSourceCounts: self.dataSourceCounts(.beforeUpdate)!, updateItems: updateItems)
+        if let dataSourceCountsBeforeUpdate = self.dataSourceCounts(.beforeUpdate) {
+            self.dataChange = DataBatchUpdate(dataSourceCounts: dataSourceCountsBeforeUpdate, updateItems: updateItems)
+        }
         
         self.prepareTargetContentOffset()
         
@@ -219,7 +221,7 @@ class LayoutController<ModelType: LayoutModel> {
         if var newBoundsInfo = self.boundsController(.afterUpdate)?.boundsInfo {
             newBoundsInfo.bounds = newBounds
             
-            if !self.layoutModel(.afterUpdate)!.elements(affectedByBoundsChange: newBoundsInfo, in: newBounds).isEmpty {
+            if self.layoutModel(.afterUpdate)?.elements(affectedByBoundsChange: newBoundsInfo, in: newBounds).isEmpty == false {
                 return true
             }
         }
@@ -310,8 +312,8 @@ class LayoutController<ModelType: LayoutModel> {
     
     // MARK: Rect
     func layoutAttributesForElements(in rect: CGRect) -> [LayoutAttributes]? {
-        let items = self.layoutModel(.afterUpdate)!.elements(in: rect)
-        return items.compactMap { (element: Element) -> LayoutAttributes? in
+        let items = self.layoutModel(.afterUpdate)?.elements(in: rect)
+        return items?.compactMap { (element: Element) -> LayoutAttributes? in
             self.layoutAttributes(for: element)
         }.filter {
             $0.frame.intersects(rect)
@@ -346,7 +348,7 @@ class LayoutController<ModelType: LayoutModel> {
             if let indexPairBeforeUpdate = dataChange.indexPairBeforeUpdate(for: indexPair), !reload {
                 // If the item is not new, we return the layout attributes from the beforeUpdate layout. We know that the item is not new because it has a corresponding indexPair in the beforeUpdate layout and was not marked for reload.
                 // We also need to adjust the indexPair of the beforeLayout layout attributes to the new indexPair.
-                return self.layoutModel(.beforeUpdate)!.layoutAttributes(for: .cell(indexPairBeforeUpdate))?.withIndexPair(indexPair)
+                return self.layoutModel(.beforeUpdate)?.layoutAttributes(for: .cell(indexPairBeforeUpdate))?.withIndexPair(indexPair)
             } else {
                 // If the item does not have a corresponding indexPair in the beforeUpdate layout or is marked for reload, we treat it as a new item.
                 let transition: ElementTransition = reload ? .reload : .insertion
@@ -386,7 +388,7 @@ class LayoutController<ModelType: LayoutModel> {
             let reload = dataChange.willReload(indexPair, state: .beforeUpdate)
             
             if let indexPairAfterUpdate = dataChange.indexPairAfterUpdate(for: indexPair), !reload {
-                return self.layoutModel(.afterUpdate)!.layoutAttributes(for: .cell(indexPairAfterUpdate))?.withIndexPair(indexPair)
+                return self.layoutModel(.afterUpdate)?.layoutAttributes(for: .cell(indexPairAfterUpdate))?.withIndexPair(indexPair)
             } else {
                 let transition: ElementTransition = reload ? .reload : .deletion
                 

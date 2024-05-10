@@ -81,7 +81,7 @@ class LayoutStateController<ModelType: LayoutModel> {
             geometryInfo.viewSize = newBounds.size
         }
         
-        if geometryInfo.viewSize == .zero {
+        if geometryInfo.viewSize.width == 0 || geometryInfo.viewSize.height == 0 {
             return nil
         }
         
