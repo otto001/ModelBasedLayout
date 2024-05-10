@@ -24,7 +24,12 @@ public struct GeometryInfo: Equatable {
     
 
     init(collectionView: NativeCollectionView) {
+#if canImport(UIKit)
         self.viewSize = collectionView.bounds.size
+#elseif os(macOS)
+        self.viewSize = collectionView.visibleRect.size
+#endif
+       
         self.safeAreaInsets = collectionView.safeAreaInsets
     }
 
