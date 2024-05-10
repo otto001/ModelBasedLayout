@@ -41,7 +41,7 @@ class StickyController {
         self.layoutAttributesProvider = layoutAttributesProvider
         
         var chunkSize = boundsController.bounds.size
-        if chunkSize == .zero {
+        if chunkSize.width == 0 || chunkSize.height == 0 {
             chunkSize = CGSize(width: 1_000, height: 1_000)
         }
         self.invalidationMap = .init(chunkSize: chunkSize)
