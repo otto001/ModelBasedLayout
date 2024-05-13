@@ -34,10 +34,10 @@ open class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: NativeCollect
         self.controller.layoutModel(.afterUpdate)
     }
     
-    internal init(_ model: @escaping (_ dataSourceCounts: DataSourceCounts, _ geometryInfo: GeometryInfo) -> ModelType, 
-                 dataSourceCounts: @escaping () -> DataSourceCounts,
-                 geometryInfo: @escaping () -> GeometryInfo,
-                 boundsInfoProvider: @escaping () -> BoundsInfo) {
+    internal init(_ model: @escaping (_ dataSourceCounts: DataSourceCounts, _ geometryInfo: GeometryInfo) -> ModelType,
+                  dataSourceCounts: @escaping () -> DataSourceCounts,
+                  geometryInfo: @escaping () -> GeometryInfo,
+                  boundsInfoProvider: @escaping () -> BoundsInfo) {
         super.init()
         self.controller = .init(model, dataSourceCounts: dataSourceCounts, geometryInfo: geometryInfo, boundsInfoProvider: boundsInfoProvider)
     }
@@ -58,9 +58,15 @@ open class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: NativeCollect
                 //self.debuggingRecorder?.record(.boundsProvider(BoundsInfo(bounds: .zero, safeAreaInsets: .zero, adjustedContentInset: .zero)))
                 return BoundsInfo(bounds: .zero, safeAreaInsets: .zero, adjustedContentInset: .zero)
             }
+#if canImport(UIKit)
             let result =  BoundsInfo(bounds: collectionView.bounds,
                                      safeAreaInsets: collectionView.safeAreaInsets,
                                      adjustedContentInset: collectionView.adjustedContentInset)
+#else
+            let result =  BoundsInfo(bounds: collectionView.visibleRect,
+                                     safeAreaInsets: collectionView.safeAreaInsets,
+                                     adjustedContentInset: collectionView.adjustedContentInset)
+#endif
             //self.debuggingRecorder?.record(.boundsProvider(result))
             return result
         }
@@ -187,8 +193,8 @@ open class ModelBasedCollectionViewLayout<ModelType: LayoutModel>: NativeCollect
         let result = self.controller.shouldInvalidateLayout(forSelfSizingElement: element,
                                                             preferredSize: preferredAttributes.size)
         //self.debuggingRecorder?.record(.shouldInvalidateLayoutForPreferredLayoutAttributes(preferredAttributes: .init(preferredAttributes),
-//                                                                                           originalAttributes: .init(originalAttributes),
-//                                                                                           result: result))
+        //                                                                                           originalAttributes: .init(originalAttributes),
+        //                                                                                           result: result))
         return result
     }
     
