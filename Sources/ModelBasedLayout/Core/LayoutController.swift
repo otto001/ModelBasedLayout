@@ -349,7 +349,7 @@ class LayoutController<ModelType: LayoutModel> {
                 // If the item is not new, we return the layout attributes from the beforeUpdate layout. We know that the item is not new because it has a corresponding indexPair in the beforeUpdate layout and was not marked for reload.
                 // We also need to adjust the indexPair of the beforeLayout layout attributes to the new indexPair.
                 return self.layoutModel(.beforeUpdate)?.layoutAttributes(for: .cell(indexPairBeforeUpdate))?.withIndexPair(indexPair)
-            } else {
+            } else if self.dataSourceCounts(.afterUpdate)?.contains(indexPair: indexPair) == true {
                 // If the item does not have a corresponding indexPair in the beforeUpdate layout or is marked for reload, we treat it as a new item.
                 let transition: ElementTransition = reload ? .reload : .insertion
                 
@@ -362,6 +362,8 @@ class LayoutController<ModelType: LayoutModel> {
                 case .custom:
                     return self.layoutModel(.afterUpdate)?.layoutAttributes(for: .cell(indexPair), frame: .initial(reload: reload))?.offset(by: self.targetContentOffsetAdjustment)
                 }
+            } else {
+                return nil
             }
         }
         
@@ -389,7 +391,7 @@ class LayoutController<ModelType: LayoutModel> {
             
             if let indexPairAfterUpdate = dataChange.indexPairAfterUpdate(for: indexPair), !reload {
                 return self.layoutModel(.afterUpdate)?.layoutAttributes(for: .cell(indexPairAfterUpdate))?.withIndexPair(indexPair)
-            } else {
+            } else if self.dataSourceCounts(.beforeUpdate)?.contains(indexPair: indexPair) == true {
                 let transition: ElementTransition = reload ? .reload : .deletion
                 
                 switch self.transitionAnimation(for: .cell(indexPair), transition: transition, state: .beforeUpdate) {
@@ -402,7 +404,8 @@ class LayoutController<ModelType: LayoutModel> {
                 case .custom:
                     return self.layoutModel(.beforeUpdate)?.layoutAttributes(for: .cell(indexPair), frame: .final(reload: reload))
                 }
-                
+            } else {
+                return nil
             }
         }
         
@@ -424,7 +427,7 @@ class LayoutController<ModelType: LayoutModel> {
             if let indexPairBeforeUpdate = dataChange.indexPairBeforeUpdate(for: element.indexPair), !reload {
                 return self.stickyController(.beforeUpdate)?.layoutAttributes(for: Element(indexPair: indexPairBeforeUpdate, elementKind: element.elementKind))?.withIndexPair(element.indexPair)
                 
-            } else {
+            } else if self.dataSourceCounts(.afterUpdate)?.contains(indexPair: element.indexPair) == true  {
                 let transition: ElementTransition = reload ? .reload : .insertion
                 
                 switch self.transitionAnimation(for: element, transition: transition, state: .afterUpdate) {
@@ -439,6 +442,8 @@ class LayoutController<ModelType: LayoutModel> {
                         self.stickyController(.afterUpdate)?.stickify($0)
                     }?.offset(by: self.targetContentOffsetAdjustment)
                 }
+            } else {
+                return nil
             }
         }
         
@@ -461,7 +466,7 @@ class LayoutController<ModelType: LayoutModel> {
             if let indexPairAfterUpdate = dataChange.indexPairAfterUpdate(for: element.indexPair), !reload {
                 return self.stickyController(.afterUpdate)?.layoutAttributes(for: Element(indexPair: indexPairAfterUpdate,
                                                                                           elementKind: element.elementKind))?.withIndexPair(element.indexPair)
-            } else {
+            } else if self.dataSourceCounts(.beforeUpdate)?.contains(indexPair: element.indexPair) == true {
                 let transition: ElementTransition = reload ? .reload : .deletion
                 
                 switch self.transitionAnimation(for: element, transition: transition, state: .beforeUpdate)  {
@@ -485,6 +490,8 @@ class LayoutController<ModelType: LayoutModel> {
                         return attrs
                     }
                 }
+            } else {
+                return nil
             }
         }
         
